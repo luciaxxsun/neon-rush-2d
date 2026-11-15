@@ -1,0 +1,4438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>霓虹狂奔 2D · NEON RUSH</title>
+<style>
+  :root{
+    --panel:#12141f; --panel2:#181e30; --line:#2c3a52; --line2:#45597a;
+    --txt:#e6eeff; --dim:#7d8cab; --cy:#22e0ff; --mg:#ff3ea5; --or:#ffcf4d; --gr:#5dff9b;
+  }
+  *{box-sizing:border-box;border-radius:0!important;margin:0;padding:0}
+  html,body{height:100%;background:#04060c;color:var(--txt);overflow:hidden;
+    font-family:"Courier New",Consolas,"Microsoft YaHei",monospace;
+    -webkit-font-smoothing:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  body{display:grid;place-items:center;
+    background-image:repeating-linear-gradient(0deg,rgba(34,224,255,.03) 0 1px,transparent 1px 4px)}
+  #stage{position:relative;width:640px;height:360px;--s:1;box-shadow:0 0 0 2px #10182a,0 0 70px rgba(34,224,255,.10)}
+  canvas#c{display:block;image-rendering:pixelated;image-rendering:crisp-edges;background:#04060c}
+  #scan{position:absolute;left:0;top:0;width:640px;height:360px;transform-origin:0 0;transform:scale(var(--s));
+    pointer-events:none;z-index:5;opacity:.35;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.5) 0 1px,rgba(0,0,0,0) 1px 3px)}
+
+  /* ---------- HUD ---------- */
+  #hud{position:absolute;left:0;top:0;width:640px;height:360px;transform-origin:0 0;transform:scale(var(--s));
+    z-index:4;pointer-events:none}
+  #topbar{position:absolute;top:10px;left:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 120px)}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:#0d1220ee;
+    border:2px solid var(--line);box-shadow:3px 3px 0 #000;font-size:12px;letter-spacing:1px;color:var(--dim)}
+  .pill b{color:#fff;font-size:13px;letter-spacing:1px}
+  .pill .k{font-size:10px;color:var(--dim);letter-spacing:2px}
+  .pill.coin{border-color:#7a5a18} .pill.coin b{color:var(--or)}
+  .pill.chip{border-color:#0d5f70} .pill.chip b{color:var(--cy)}
+  #topRight{position:absolute;left:0;top:0;width:640px;height:360px;transform-origin:0 0;transform:scale(var(--s));
+    pointer-events:none;z-index:9}
+  #topRight .tbtn{position:absolute;top:8px;bottom:auto;display:block;height:auto;white-space:nowrap;
+    pointer-events:auto;cursor:pointer;padding:5px 0;line-height:1.6;
+    width:62px;text-align:center;background:#0d1220ee;border:2px solid var(--line);box-shadow:3px 3px 0 #000;
+    font-size:11px;letter-spacing:1px;color:var(--dim)}
+  #fsBtn{right:78px}
+  #muteBtn{right:8px}
+  #topRight .tbtn:hover{color:var(--cy);border-color:var(--cy)}
+  #muteBtn.off{color:var(--mg);border-color:#7a1d4d}
+
+  #prompt{position:absolute;left:50%;bottom:26px;transform:translateX(-50%) translateY(6px);
+    padding:7px 16px;background:#0d1220f2;border:2px solid var(--cy);box-shadow:4px 4px 0 #000;
+    font-size:12px;letter-spacing:1px;color:var(--cy);opacity:0;transition:opacity .14s,transform .14s;white-space:nowrap}
+  #prompt.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  #prompt:before{content:"▸ ";color:var(--mg)}
+
+  #toast{position:absolute;left:50%;top:56px;transform:translateX(-50%) translateY(-8px);
+    padding:7px 18px;background:#1a0d1af2;border:2px solid var(--mg);box-shadow:4px 4px 0 #000;
+    font-size:12px;letter-spacing:1px;color:#ffd9ec;opacity:0;transition:opacity .18s,transform .18s;white-space:nowrap}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---------- 覆盖层 ---------- */
+  .ov{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;
+    background:#04060ceb;padding:14px}
+  .ov.on{display:flex}
+  .card{background:var(--panel);border:3px solid var(--line2);box-shadow:7px 7px 0 #000;padding:16px 18px;max-width:520px;width:100%}
+  .card h2{font-size:20px;letter-spacing:3px;color:#fff;text-shadow:2px 2px 0 #000,4px 4px 0 rgba(255,62,165,.5)}
+  .card h2 em{font-style:normal;color:var(--cy);font-size:12px;letter-spacing:5px;display:block;margin-top:3px;
+    text-shadow:2px 2px 0 #000}
+  .card p{font-size:12px;color:var(--dim);line-height:1.9;margin-top:8px}
+
+  .btn{display:block;width:100%;cursor:pointer;font:700 14px/1 "Courier New",monospace;letter-spacing:5px;
+    color:#03141b;background:var(--cy);border:0;padding:12px;
+    box-shadow:inset -4px -4px 0 rgba(0,0,0,.32),inset 4px 4px 0 rgba(255,255,255,.55),5px 5px 0 #000}
+  .btn:hover{background:#5cf0ff}
+  .btn:active{transform:translate(3px,3px);box-shadow:inset -4px -4px 0 rgba(0,0,0,.32),inset 4px 4px 0 rgba(255,255,255,.55),2px 2px 0 #000}
+  .btn.alt{background:var(--panel2);color:var(--txt);border:3px solid var(--line2);
+    box-shadow:inset -3px -3px 0 rgba(0,0,0,.5),inset 3px 3px 0 rgba(255,255,255,.08),4px 4px 0 #000;font-size:12px;letter-spacing:3px}
+
+  .keys{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:12px 0 4px}
+  .krow{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim)}
+  .kb{font-family:"Courier New",monospace;font-size:10px;color:var(--or);border:2px solid #6b4a10;background:#191203;
+    padding:2px 6px;box-shadow:2px 2px 0 #000;letter-spacing:1px;white-space:nowrap}
+
+  /* ---------- 商店 ---------- */
+  .shopCard{background:var(--panel);border:3px solid var(--line2);box-shadow:7px 7px 0 #000;width:100%;max-width:520px}
+  .shopHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;
+    border-bottom:3px solid var(--line);background:#0e1220}
+  .shopHead h3{font-size:15px;letter-spacing:3px;color:#fff}
+  .shopHead .who{font-size:10px;color:var(--mg);letter-spacing:2px}
+  .shopHead .cred{font-size:11px;color:var(--or);letter-spacing:1px}
+  #shopLine{padding:10px 12px 0;font-size:11px;color:var(--dim);line-height:1.7}
+  #shopArt{display:block;width:100%;height:auto;image-rendering:pixelated;
+    border-bottom:3px solid var(--line);background:#080c16}
+
+  /* ---------- 电梯 ---------- */
+  .liftCard{background:var(--panel);border:3px solid var(--line2);box-shadow:7px 7px 0 #000;width:100%;max-width:380px}
+  .liftHead{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;
+    border-bottom:3px solid var(--line);background:#0e1220}
+  .liftHead h3{font-size:15px;letter-spacing:4px;color:#fff}
+  .liftHead .sub{font-size:10px;color:var(--mg);letter-spacing:2px}
+  #liftBtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 14px}
+  .fbtn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;cursor:pointer;
+    background:#131a2c;border:2px solid var(--line);box-shadow:3px 3px 0 #000;color:var(--dim);
+    font-family:inherit;font-size:11px;letter-spacing:1px;transition:all .1s}
+  .fbtn b{font-size:20px;letter-spacing:2px;color:#fff}
+  .fbtn:hover{border-color:var(--cy);color:var(--cy);transform:translate(-1px,-1px);box-shadow:4px 4px 0 #000}
+  .fbtn.now{border-color:var(--or);color:var(--or);opacity:.65;cursor:default}
+  .fbtn.now b{color:var(--or)}
+  .liftFoot{padding:0 14px 14px}
+  .liftFoot .btn{width:100%}
+  .items{padding:10px 12px;display:flex;flex-direction:column;gap:6px;max-height:190px;overflow:auto}
+  .item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px;
+    border:2px solid var(--line);background:#0c101c}
+  .item .it b{display:block;font-size:12px;color:#fff;letter-spacing:1px}
+  .item .it span{font-size:10px;color:var(--dim)}
+  .item .ip{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+  .item .price{font-size:11px;color:var(--or);letter-spacing:1px}
+  .item .buy{cursor:pointer;font:700 11px/1 "Courier New",monospace;letter-spacing:2px;color:#03141b;
+    background:var(--cy);border:0;padding:7px 10px;
+    box-shadow:inset -3px -3px 0 rgba(0,0,0,.3),inset 3px 3px 0 rgba(255,255,255,.5),3px 3px 0 #000}
+  .item .buy:hover{background:#5cf0ff}
+  .item .buy:disabled{background:#2a3448;color:#5c6a85;cursor:default;box-shadow:none}
+  .item.maxed{opacity:.6}
+  .shopFoot{padding:0 12px 12px}
+  #best{font-size:12px;color:var(--dim);line-height:2;margin:10px 0}
+  #best b{color:var(--cy)}
+
+  /* ---------- 触屏 ---------- */
+  #touch{position:absolute;inset:0;z-index:6;display:none}
+  #touch.on{display:block}
+  .tbtn{position:absolute;bottom:16px;display:grid;place-items:center;width:52px;height:52px;
+    background:#0d1220d0;border:2px solid var(--line2);color:var(--txt);font-size:16px;
+    box-shadow:3px 3px 0 #000;pointer-events:auto;touch-action:none}
+  #tLeft{left:12px} #tRight{left:72px} #tJump{right:12px;width:60px;height:60px} #tUse{right:80px;bottom:22px;font-size:12px}
+  #tLeft:active,#tRight:active,#tJump:active,#tUse:active{background:var(--cy);color:#03141b}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div id="scan"></div>
+
+  <div id="hud">
+    <div id="topbar">
+      <div class="pill coin"><span class="k">金币</span><b id="coins">0</b></div>
+      <div class="pill chip"><span class="k">芯片</span><b id="chips">0</b></div>
+      <div class="pill"><span class="k">区域</span><b id="area">出生空岛</b></div>
+    </div>
+    <div id="prompt"></div>
+    <div id="toast"></div>
+  </div>
+  <div id="topRight"><div class="tbtn" id="fsBtn">全屏</div><div class="tbtn" id="muteBtn">音效</div></div>
+
+  <div id="title" class="ov on">
+    <div class="card">
+      <h2>霓虹狂奔<em>N E O N &nbsp; R U S H &nbsp; 2 D</em></h2>
+      <p>十家小店<b>都能走进去</b>：进店后可以在店里自由走动，走到展台前按 <b>E</b> 直接买，走到柜台前按 <b>E</b> 打开商品面板点着买，走到门口按 <b>E</b> 出门。<br>街区是上下两层：下层小店、居民楼和工厂，上层高架步道和另一排建筑，电梯门口按 <b>E</b> 选楼层（有几层就有几个按钮）。<br>中间那道光门通向浮空中枢，中枢的五个传送门各自通往一个世界岛——每个岛也都是两层，有商铺、建筑和 5~9 个跑酷挑战门。</p>
+      <div class="keys">
+        <div class="krow"><span class="kb">A / D</span> 左右移动</div>
+        <div class="krow"><span class="kb">SPACE</span> 跳跃</div>
+        <div class="krow"><span class="kb">E</span> 进传送门 / 进店</div>
+        <div class="krow"><span class="kb">SHIFT</span> 冲刺（买到靴子后）</div>
+        <div class="krow"><span class="kb">F</span> 全屏 / 退出全屏</div>
+      </div>
+      <p>在挑战里掉下去 → 回到出发的那个世界岛；在世界岛掉下去 → 回到岛上。<br>只有在出生空岛掉下去，才会重生回出生空岛。<br>每完成一个任务点芯片 +5，全清再 +15 —— 芯片没有上限。</p>
+      <button class="btn" id="startBtn" style="margin-top:12px">开 始 奔 跑</button>
+    </div>
+  </div>
+
+  <div id="shop" class="ov">
+    <div class="shopCard">
+      <div class="shopHead">
+        <div>
+          <h3 id="shopName">小店</h3>
+          <div class="who">店长 · <span id="shopKeep">—</span></div>
+        </div>
+        <div class="cred">◎ <span id="shopCoins">0</span></div>
+      </div>
+      <canvas id="shopArt" width="480" height="150"></canvas>
+      <div id="shopLine"></div>
+      <div class="items" id="shopList"></div>
+      <div class="shopFoot"><button class="btn alt" id="shopClose">离开（E / ESC）</button></div>
+    </div>
+  </div>
+
+  <div id="lift" class="ov">
+    <div class="liftCard">
+      <div class="liftHead">
+        <h3>电 梯</h3>
+        <div class="sub" id="liftSub">出生空岛</div>
+      </div>
+      <div id="liftBtns"></div>
+      <div class="liftFoot"><button class="btn alt" id="liftClose">离开（E / ESC）</button></div>
+    </div>
+  </div>
+
+  <div id="pause" class="ov">
+    <div class="card">
+      <h2>暂停<em>P A U S E</em></h2>
+      <p>A / D 移动　SPACE 跳跃　E 交互　SHIFT 冲刺　ESC 暂停</p>
+      <button class="btn" id="resumeBtn" style="margin-top:12px">继 续</button>
+    </div>
+  </div>
+
+  <div id="win" class="ov">
+    <div class="card">
+      <h2>全 部 完 成<em>A L L &nbsp; C L E A R</em></h2>
+      <div id="best"></div>
+      <button class="btn" id="againBtn">再 跑 一 次</button>
+    </div>
+  </div>
+
+  <div id="touch">
+    <div class="tbtn" id="tLeft">◀</div>
+    <div class="tbtn" id="tRight">▶</div>
+    <div class="tbtn" id="tJump">跳</div>
+    <div class="tbtn" id="tUse">E</div>
+  </div>
+</div>
+<script>
+/* ==== 00-core.js ==== */
+'use strict';
+/* =========================================================================
+   00 core — 画布、像素尺度、输入、全局状态
+   ========================================================================= */
+
+const VIEW = { w: 640, h: 360 };
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', { alpha: false });
+canvas.width = VIEW.w;
+canvas.height = VIEW.h;
+ctx.imageSmoothingEnabled = false;
+
+const G = {
+  scene: 'spawn',
+  world: 0,
+  coins: 0,
+  chips: 0,
+  time: 0,
+  started: false,
+  paused: false,
+  won: false,
+  falls: 0,
+  lastWorld: -1,
+  shopOpen: null,
+  fade: 1,           // 过渡遮罩 0..1
+  fades: 0,          // 目标
+  tasksDone: {},     // 'w0c0t1': true
+  chal: 0,
+  up: { spd: 0, jmp: 0, dj: false, dash: false, detect: false, coat: 0, coinBonus: 0, chipBonus: 0, grip: false, boots: false },
+  buffs: [],
+  log: []
+};
+
+const input = { l: 0, r: 0, jh: 0, jp: 0, e: 0, dash: 0 };
+const CAM = { x: 0, y: 0 };
+
+/* 玩家 */
+const P = {
+  x: 0, y: 0, w: 12, h: 18, vx: 0, vy: 0,
+  onGround: false, face: 1, anim: 0, state: 'idle',
+  coyote: 0, buffer: 0, jumps: 0, dashT: 0, dashCd: 0,
+  spawnX: 0, respawnT: 0
+};
+
+const keys = Object.create(null);
+
+function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function chance(p) { return Math.random() < p; }
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* 整数倍放大，像素不变形 */
+function fit() {
+  const st = document.getElementById('stage');
+  let s = Math.min(innerWidth / VIEW.w, innerHeight / VIEW.h);
+  const near = Math.round(s);
+  if (Math.abs(s - near) < 0.02) s = near;
+  const w = Math.round(VIEW.w * s), h = Math.round(VIEW.h * s);
+  st.style.width = w + 'px';
+  st.style.height = h + 'px';
+  st.style.setProperty('--s', (w / VIEW.w).toFixed(4));
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+}
+addEventListener('resize', fit);
+
+/* ---------- 全屏 ---------- */
+function toggleFS() {
+  const d = document, el = d.documentElement;
+  if (d.fullscreenElement || d.webkitFullscreenElement) {
+    const f = d.exitFullscreen || d.webkitExitFullscreen;
+    if (f) f.call(d);
+  } else {
+    const f = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (f) { const p = f.call(el); if (p && p.catch) p.catch(() => {}); }
+  }
+}
+addEventListener('fullscreenchange', () => setTimeout(fit, 80));
+addEventListener('webkitfullscreenchange', () => setTimeout(fit, 80));
+{ const b = document.getElementById('fsBtn'); if (b) b.onclick = toggleFS; }
+
+/* ---------- 键盘 ---------- */
+const JUMPK = { Space: 1, KeyW: 1, ArrowUp: 1 };
+addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+  if (e.repeat) return;
+  if (e.code === 'KeyF') { toggleFS(); return; }
+  keys[e.code] = 1;
+  if (JUMPK[e.code]) { input.jp = 1; input.jh = 1; }
+  if (e.code === 'KeyE' || e.code === 'Enter') {
+    if (G.shopOpen) { closeShop(); return; }
+    if (G.liftOpen) { closeLift(); return; }
+    input.e = 1;
+  }
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') input.dash = 1;
+  if (e.code === 'Escape') window.dispatchEvent(new Event('nr-esc'));
+  sync();
+});
+addEventListener('keyup', e => {
+  keys[e.code] = 0;
+  if (JUMPK[e.code]) input.jh = 0;
+  sync();
+});
+function sync() {
+  input.l = (keys.KeyA || keys.ArrowLeft) ? 1 : 0;
+  input.r = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
+}
+
+/* ---------- 简易音效 ---------- */
+const SFX = (() => {
+  let ac = null, muted = false;
+  function ensure() {
+    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = null; } }
+    return ac;
+  }
+  function beep(f, dur, type, vol) {
+    const a = ensure(); if (!a || muted) return;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type || 'square';
+    o.frequency.setValueAtTime(f, a.currentTime);
+    g.gain.setValueAtTime(0.0001, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol || 0.05, a.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+    o.connect(g).connect(a.destination);
+    o.start(); o.stop(a.currentTime + dur + 0.02);
+  }
+  return {
+    coin() { beep(880, 0.07, 'square', 0.035); setTimeout(() => beep(1320, 0.09, 'square', 0.03), 55); },
+    jump() { beep(300, 0.08, 'square', 0.03); },
+    land() { beep(150, 0.05, 'triangle', 0.03); },
+    task() { beep(660, 0.09, 'square', 0.04); setTimeout(() => beep(990, 0.12, 'square', 0.04), 90); setTimeout(() => beep(1320, 0.16, 'square', 0.035), 200); },
+    door() { beep(440, 0.1, 'sine', 0.04); setTimeout(() => beep(220, 0.14, 'sine', 0.035), 90); },
+    fall() { beep(220, 0.2, 'sawtooth', 0.03); setTimeout(() => beep(120, 0.25, 'sawtooth', 0.03), 150); },
+    buy() { beep(760, 0.06, 'square', 0.035); setTimeout(() => beep(1140, 0.1, 'square', 0.03), 60); },
+    mute(v) { muted = v; },
+    isMuted() { return muted; },
+    resume() { const a = ensure(); if (a && a.state === 'suspended') a.resume(); }
+  };
+})();
+
+/* ==== 10-art.js ==== */
+'use strict';
+/* =========================================================================
+   10 art — 像素绘制：背景、岛屿、传送门、小店、玩家、金币
+   一切都是 640x360 画布上的整数方块，不依赖任何图片
+   ========================================================================= */
+
+const PAL = {
+  spawn: {
+    sky: ['#070b1e', '#101a42', '#28194a', '#3a1c4a'],
+    far: '#0e1738', mid: '#182a56', isl: '#26324f', top: '#4a6491',
+    edge: '#22e0ff', accent: '#22e0ff', cloud: '#1a2650'
+  },
+  hub5: {
+    sky: ['#150a2a', '#2a0f4a', '#42124a', '#5a1650'],
+    far: '#20133e', mid: '#33165a', isl: '#2f1e4e', top: '#5e3c86',
+    edge: '#ff3ea5', accent: '#ff3ea5', cloud: '#2a1448'
+  },
+  worlds: [
+    { name: '霓虹街区', sky: ['#060a1a', '#101a3c', '#241040'], far: '#0b1230', mid: '#14203e', isl: '#1e2942', top: '#3d5480', edge: '#22e0ff', accent: '#22e0ff' },
+    { name: '雨夜码头', sky: ['#040c14', '#08202e', '#0d3040'], far: '#07161e', mid: '#0e2a36', isl: '#193949', top: '#2e6a80', edge: '#5dff9b', accent: '#5dff9b' },
+    { name: '高层天台', sky: ['#0a0620', '#1e1040', '#3a1420'], far: '#120a26', mid: '#1e1236', isl: '#261a40', top: '#4d2f6b', edge: '#ffcf4d', accent: '#ffcf4d' },
+    { name: '熔炉工厂', sky: ['#170608', '#38100c', '#54200a'], far: '#1a0808', mid: '#2a0e0c', isl: '#361616', top: '#6b2e1e', edge: '#ff8a3d', accent: '#ff8a3d' },
+    { name: '数据深渊', sky: ['#02060a', '#04141a', '#07281f'], far: '#03100e', mid: '#06201a', isl: '#0d2b25', top: '#185646', edge: '#5dff9b', accent: '#5dff9b' }
+  ]
+};
+
+/* --- 基础方块 --- */
+function r(x, y, w, h, c) {
+  if (typeof c !== 'string' || c.length < 4) return;
+  ctx.fillStyle = c;
+  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+}
+function rl(x, y, w, h, c, a) {
+  ctx.globalAlpha = a;
+  r(x, y, w, h, c);
+  ctx.globalAlpha = 1;
+}
+function oval(cx, cy, rx, ry, c) {
+  ctx.fillStyle = c;
+  for (let y = -ry; y < ry; y += 2) {
+    const k = 1 - (y / ry) * (y / ry);
+    if (k <= 0) continue;
+    const hw = rx * Math.sqrt(k);
+    ctx.fillRect(Math.round(cx - hw), Math.round(cy + y), Math.max(1, Math.round(hw * 2)), 2);
+  }
+}
+function signText(txt, cx, y, color, size, outline) {
+  ctx.font = 'bold ' + (size || 10) + 'px "Microsoft YaHei",monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  if (outline !== false) {
+    ctx.fillStyle = '#03060e';
+    ctx.fillText(txt, cx + 1, y + 1);
+  }
+  ctx.fillStyle = color;
+  ctx.fillText(txt, cx, y);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
+
+/* =========================================================================
+   背景
+   ========================================================================= */
+function gradientSky(cols) {
+  const g = ctx.createLinearGradient(0, 0, 0, VIEW.h);
+  for (let i = 0; i < cols.length; i++) g.addColorStop(i / (cols.length - 1), cols[i]);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+}
+
+function stars(camx, seed, t) {
+  const rng = mulberry32(seed);
+  for (let i = 0; i < 90; i++) {
+    const sx = (rng() * 1800 - camx * 0.08) % 1800;
+    const sy = rng() * 180;
+    const tw = 0.55 + 0.45 * Math.sin(t * 2 + i);
+    rl(sx < 0 ? sx + 1800 : sx, sy, 1, 1, rng() > 0.75 ? '#9fe8ff' : '#ffffff', 0.25 + tw * 0.45);
+  }
+}
+
+/* 远景楼群 */
+function farCity(camx, col, baseY, seed, density, hMax) {
+  const rng = mulberry32(seed);
+  const off = (camx * 0.22) % 400;
+  for (let i = -2; i < 22; i++) {
+    const bw = 14 + rng() * 26;
+    const bh = 30 + rng() * (hMax || 120);
+    const x = i * 34 - off;
+    r(x, baseY - bh, bw, bh, col);
+    if (rng() > 0.55 && density !== 0) {
+      for (let wy = baseY - bh + 6; wy < baseY - 6; wy += 7) {
+        for (let wx = x + 3; wx < x + bw - 3; wx += 5) {
+          if (rng() > 0.55) rl(wx, wy, 2, 2, '#8fd8ff', 0.16 + rng() * 0.3);
+        }
+      }
+    }
+  }
+}
+
+/* 中景楼群（带霓虹边） */
+function midCity(camx, col, baseY, seed, accent) {
+  const rng = mulberry32(seed);
+  const off = (camx * 0.45) % 300;
+  for (let i = -2; i < 18; i++) {
+    const bw = 24 + rng() * 34;
+    const bh = 50 + rng() * 110;
+    const x = i * 46 - off;
+    const y = baseY - bh;
+    r(x, y, bw, bh, col);
+    r(x, y, bw, 2, accent);
+    for (let wy = y + 8; wy < baseY - 8; wy += 9) {
+      for (let wx = x + 4; wx < x + bw - 4; wx += 6) {
+        if (rng() > 0.42) rl(wx, wy, 3, 3, rng() > 0.7 ? accent : '#a9d8ff', 0.18 + rng() * 0.35);
+      }
+    }
+    if (rng() > 0.7) r(x + bw * 0.4, y - 10, 2, 10, accent);
+  }
+}
+
+/* 漂浮岛（背景装饰） */
+function floatIsland(x, y, w, col, top) {
+  oval(x + w / 2, y, w / 2, 5, top);
+  for (let i = 0; i < 5; i++) {
+    const t = i / 5;
+    r(x + w * 0.12 * t, y + 3 + i * 4, w * (1 - 0.24 * t), 4, col);
+  }
+  r(x + w * 0.3, y + w * 0.22, 2, 4, col);
+}
+
+/* =========================================================================
+   岛屿平台
+   ========================================================================= */
+function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16);
+  let rr = (n >> 16) & 255, gg = (n >> 8) & 255, bb = n & 255;
+  rr = Math.min(255, Math.round(rr * k));
+  gg = Math.min(255, Math.round(gg * k));
+  bb = Math.min(255, Math.round(bb * k));
+  return '#' + ((1 << 24) + (rr << 16) + (gg << 8) + bb).toString(16).slice(1);
+}
+
+function drawIsland(p, pal, t) {
+  const x = p.x, y = p.y, w = p.w;
+  const H = p.h || 54;
+  const isl2 = shade(pal.isl, 0.7);
+
+  // 岩体（宽岛不做收分，改成直筒 + 锯齿底，才像浮岛）
+  r(x, y + 9, w, H - 9, pal.isl);
+  for (let yy = y + 18; yy < y + H - 2; yy += 7) rl(x, yy, w, 1, '#000000', 0.16);
+  for (let i = 0; i < 4; i++) rl(x, y + 12 + i * 11, w, 1, '#ffffff', 0.03);
+
+  // 岛下霓虹雾光（先铺在下面，免得盖住锯齿剪影）
+  const ug = ctx.createLinearGradient(0, y + H, 0, y + H + 46);
+  ug.addColorStop(0, pal.edge + '1c');
+  ug.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = ug;
+  ctx.fillRect(x, y + H, w, 46);
+
+  // 底部锯齿剪影（路径一次填充，不用逐块）
+  ctx.fillStyle = shade(pal.isl, 0.42);
+  ctx.beginPath();
+  ctx.moveTo(x, y + H - 3);
+  let sx = x + w;
+  while (sx > x) {
+    const step = 13 + ((sx * 13) % 21);
+    const dep = 4 + ((sx * 7) % 16);
+    ctx.lineTo(sx, y + H + dep);
+    ctx.lineTo(sx - step * 0.45, y + H - 3);
+    sx -= step;
+  }
+  ctx.lineTo(x, y + H - 3);
+  ctx.closePath();
+  ctx.fill();
+  // 岛底霓虹边缘光
+  rl(x, y + H - 3, w, 1, pal.edge, 0.22);
+  rl(x, y + H + 1, w, 1, pal.edge, 0.10);
+
+  // 顶部地表
+  r(x, y, w, 9, pal.top);
+  r(x, y, w, 2, pal.edge);
+  r(x, y + 9, w, 2, shade(pal.top, 0.72));
+  // 颗粒 + 边缘灯点
+  const rng = mulberry32(Math.floor(x) * 7 + 3);
+  for (let i = 0; i < w / 4; i++) {
+    const px2 = x + rng() * w;
+    rl(px2, y + 3, 2, 1, '#ffffff', 0.13);
+    if (rng() > 0.72) rl(px2, y + 10, 1, 2, pal.edge, 0.22);
+  }
+  // 悬挂小岩块
+  for (let i = 0; i < 9; i++) {
+    const bx = x + rng() * w;
+    r(bx, y + 14 + H + rng() * 16, 3 + rng() * 4, 3, shade(pal.isl, 0.6));
+  }
+  // 岩体霓虹矿脉
+  const rng2 = mulberry32(Math.floor(x / 7) + 91);
+  for (let i = 0; i < Math.max(2, w / 90); i++) {
+    const vx = x + rng2() * w;
+    const vy = y + 14 + rng2() * 26;
+    for (let k = 0; k < 5; k++) rl(vx + k * 2, vy + k * 3, 2, 3, pal.edge, 0.09);
+  }
+  // 只压最后 12px，保住底部剪影
+  const bg = ctx.createLinearGradient(0, y + H - 14, 0, y + H + 2);
+  bg.addColorStop(0, 'rgba(0,0,0,0)');
+  bg.addColorStop(1, 'rgba(0,0,0,.35)');
+  ctx.fillStyle = bg;
+  ctx.fillRect(x, y + H - 14, w, 16);
+}
+
+/* 街边小物件 */
+function drawDeco(kind, x, gy, t) {
+  if (kind === 'lamp') {
+    r(x - 1, gy - 42, 3, 42, '#243044');
+    r(x - 7, gy - 44, 15, 3, '#2e3c56');
+    r(x - 6, gy - 41, 12, 3, '#22e0ff');
+    rl(x - 16, gy - 38, 32, 38, '#22e0ff', 0.055);
+    rl(x - 11, gy - 2, 22, 2, '#22e0ff', 0.28);
+  } else if (kind === 'vend') {
+    r(x - 8, gy - 27, 16, 27, '#1c2438');
+    r(x - 8, gy - 27, 16, 1, '#3a4a66');
+    r(x - 6, gy - 24, 12, 15, '#1a7f9c');
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        r(x - 5 + j * 4, gy - 23 + i * 5, 3, 3, ['#ff5ad9', '#ffcf4d', '#5dff9b'][(i + j) % 3]);
+      }
+    }
+    r(x - 6, gy - 7, 12, 4, '#0b101c');
+    rl(x - 11, gy - 30, 22, 30, '#2ad0ff', 0.05);
+  } else if (kind === 'crate') {
+    r(x - 7, gy - 12, 14, 12, '#33220f');
+    r(x - 7, gy - 12, 14, 1, '#6a4420');
+    r(x - 7, gy - 7, 14, 1, '#6a4420');
+    r(x - 1, gy - 12, 2, 12, '#1c1208');
+  } else if (kind === 'plant') {
+    r(x - 5, gy - 7, 10, 7, '#2f1c36');
+    rl(x - 5, gy - 7, 10, 1, '#6a4676', 0.9);
+    oval(x, gy - 12, 6, 5, '#1e5a3a');
+    oval(x - 3, gy - 15, 4, 4, '#2c7a4a');
+    oval(x + 3, gy - 14, 3, 3, '#2c7a4a');
+  }
+}
+
+/* =========================================================================
+   传送门
+   ========================================================================= */
+function drawPortal(x, gy, color, t, num) {
+  const w = 46, h = 60;
+  const x0 = Math.round(x - w / 2), y0 = Math.round(gy - h);
+  // 基座
+  r(x0 - 4, gy - 6, w + 8, 6, '#1a2238');
+  r(x0 - 4, gy - 6, w + 8, 2, '#3a4a66');
+  // 门框
+  r(x0, y0 + 6, 6, h - 6, '#2b3a56');
+  r(x0 + w - 6, y0 + 6, 6, h - 6, '#2b3a56');
+  r(x0, y0 + 2, w, 6, '#334662');
+  r(x0 + 2, y0, w - 4, 4, '#3d5373');
+  // 内部漩涡
+  const cx = x0 + w / 2, cy = y0 + h / 2 + 4;
+  oval(cx, cy, 16, 20, '#04060e');
+  const ph = t * 1.7;
+  for (let i = 5; i >= 1; i--) {
+    const rx = 3 + i * 2.4;
+    const ry = 4 + i * 3.0;
+    const yy = cy + Math.sin(ph + i * 0.8) * 3;
+    oval(cx + Math.cos(ph + i) * 1.5, yy, rx, ry, i % 2 ? color : '#ffffff');
+    ctx.globalAlpha = 0.18 + i * 0.09;
+    ctx.globalAlpha = 1;
+  }
+  // 亮点
+  for (let i = 0; i < 7; i++) {
+    const a = ph + i * 0.9;
+    const px2 = cx + Math.cos(a) * (7 + i);
+    const py2 = cy + Math.sin(a * 1.3) * (9 + i);
+    r(px2, py2, 1, 1, '#ffffff');
+  }
+  // 顶部台标
+  r(x0 + 6, y0 - 12, w - 12, 12, '#0c1220');
+  r(x0 + 6, y0 - 12, w - 12, 2, color);
+  signText(num || 'PORTAL', cx, y0 - 5, color, 8, false);
+  // 地面光
+  rl(x0, gy - 8, w, 8, color, 0.10);
+}
+
+/* =========================================================================
+   小店（六种，各自一套贴图）
+   ========================================================================= */
+const SHOP_W = 96, SHOP_H = 76;
+
+function drawShop(kind, x, gy, t) {
+  const W = SHOP_W, H = SHOP_H;
+  const x0 = Math.round(x - W / 2), y0 = Math.round(gy - H);
+  const cx = x0 + W / 2;
+  // 地面阴影
+  rl(x0 + 6, gy - 4, W - 12, 5, '#000000', 0.35);
+
+  const K = {
+    store: { body: '#1c2a48', trim: '#22e0ff', sign: '24H 便利店', signFg: '#04121a', signBg: '#22e0ff' },
+    cyber: { body: '#251a33', trim: '#ff3ea5', sign: '义体诊所', signFg: '#ffffff', signBg: '#a0165e' },
+    ramen: { body: '#2f1d0c', trim: '#ffcf4d', sign: '樱 拉 面', signFg: '#2a1503', signBg: '#ffcf4d' },
+    music: { body: '#1a1e38', trim: '#7a4bff', sign: '唱 片 行', signFg: '#e9e2ff', signBg: '#4a22a8' },
+    cloth: { body: '#2b1a38', trim: '#ff8ad5', sign: '霓 裳', signFg: '#2a0618', signBg: '#ff8ad5' },
+    bank: { body: '#152828', trim: '#5dff9b', sign: '芯 片 兑 换', signFg: '#02110c', signBg: '#5dff9b' }
+  }[kind] || { body: '#16203a', trim: '#22e0ff', sign: 'SHOP', signFg: '#000', signBg: '#22e0ff' };
+
+  /* --- 主体墙 --- */
+  r(x0, y0 + 18, W, H - 18, K.body);
+  // 墙砖
+  for (let yy = y0 + 20; yy < gy - 4; yy += 6) {
+    rl(x0 + 1, yy, W - 2, 1, '#000000', 0.28);
+  }
+  // 左右立柱
+  r(x0, y0 + 18, 4, H - 18, '#0b1020');
+  r(x0 + W - 4, y0 + 18, 4, H - 18, '#0b1020');
+
+  /* --- 招牌 --- */
+  const sy = y0 + 2;
+  r(x0 + 4, sy, W - 8, 16, '#080c16');
+  r(x0 + 4, sy, W - 8, 2, K.trim);
+  rl(x0 + 4, sy + 14, W - 8, 2, K.trim, 0.4);
+  r(x0 + 8, sy + 4, W - 16, 9, K.signBg);
+  signText(K.sign, cx, sy + 8.5, K.signFg, 8, false);
+
+  /* --- 雨棚 --- */
+  if (kind !== 'bank') {
+    const aw = W - 10;
+    for (let i = 0; i < aw / 8; i++) {
+      r(x0 + 5 + i * 8, sy + 16, 8, 5, i % 2 ? K.trim : '#f2f7ff');
+    }
+    r(x0 + 5, sy + 21, aw, 1, '#00000055');
+  }
+
+  /* --- 橱窗 / 门 --- */
+  const wy = y0 + 30, wh = 30;
+  if (kind === 'store') {
+    // 玻璃窗 + 货架
+    r(x0 + 8, wy, 44, wh, '#0a2230');
+    r(x0 + 8, wy, 44, 2, '#2ad0ff');
+    for (let i = 0; i < 3; i++) {
+      r(x0 + 11, wy + 7 + i * 8, 38, 3, '#123448');
+      const cols = ['#ff5ad9', '#5dff9b', '#ffcf4d', '#22e0ff'];
+      for (let j = 0; j < 7; j++) {
+        r(x0 + 12 + j * 5, wy + 4 + i * 8, 3, 3, cols[(i + j) % 4]);
+      }
+    }
+    rl(x0 + 8, wy, 44, wh, '#9fe8ff', 0.10);
+    // 玻璃反光
+    r(x0 + 12, wy + 2, 2, 24, '#ffffff22');
+    // 自动门
+    r(x0 + 58, wy, 30, wh, '#08161f');
+    r(x0 + 58, wy, 30, 2, K.trim);
+    r(x0 + 60, wy + 4, 12, wh - 6, '#12384a');
+    r(x0 + 74, wy + 4, 12, wh - 6, '#12384a');
+    r(x0 + 72, wy + 4, 2, wh - 6, '#04121a');
+    rl(x0 + 58, wy + wh - 3, 30, 3, K.trim, 0.5);
+    r(x0 + 62, wy + 14, 3, 10, K.trim);
+    // 门口灯
+    rl(x0 + 56, gy - 6, 34, 6, K.trim, 0.22);
+  } else if (kind === 'cyber') {
+    // 金属门面 + 红灯
+    r(x0 + 8, wy, 50, wh, '#0d0a16');
+    for (let i = 0; i < 4; i++) r(x0 + 10, wy + 4 + i * 7, 46, 1, '#2a1a3a');
+    // 挂着的义体手臂
+    for (let i = 0; i < 3; i++) {
+      const ax = x0 + 14 + i * 15;
+      r(ax, wy + 6, 5, 14, '#5a4a6a');
+      r(ax, wy + 6, 5, 2, '#8a7aa0');
+      r(ax + 1, wy + 19, 3, 5, '#3a2f4a');
+    }
+    rl(x0 + 8, wy, 50, wh, '#ff3ea5', 0.08);
+    // 红十字
+    r(x0 + 30, wy - 2, 12, 4, '#ff2b4d');
+    r(x0 + 34, wy - 6, 4, 12, '#ff2b4d');
+    // 门
+    r(x0 + 64, wy, 24, wh, '#120c1c');
+    r(x0 + 66, wy + 3, 20, wh - 6, '#241634');
+    r(x0 + 74, wy + 3, 1, wh - 6, '#0a0610');
+    rl(x0 + 64, gy - 6, 24, 6, K.trim, 0.2);
+  } else if (kind === 'ramen') {
+    // 木格门 + 暖帘
+    r(x0 + 8, wy, 80, wh, '#2a1a0c');
+    for (let i = 0; i < 8; i++) r(x0 + 8 + i * 10, wy, 1, wh, '#1a0f06');
+    // 暖帘 noren
+    for (let i = 0; i < 4; i++) {
+      r(x0 + 10 + i * 19, wy, 17, 12, '#c8341f');
+      rl(x0 + 10 + i * 19, wy + 11, 17, 1, '#7a1a0c', 0.9);
+    }
+    signText('拉', x0 + 18, wy + 6, '#ffe6c9', 8, false);
+    signText('麺', x0 + 56, wy + 6, '#ffe6c9', 8, false);
+    // 灯笼
+    oval(x0 + 6, wy - 4, 4, 5, '#ff5a3d');
+    rl(x0 + 6, wy - 10, 1, 3, '#ffcf4d', 0.8);
+    oval(x0 + W - 8, wy - 4, 4, 5, '#ff5a3d');
+    // 蒸汽
+    for (let i = 0; i < 4; i++) {
+      const yy = wy + 16 - ((t * 14 + i * 9) % 30);
+      rl(x0 + 20 + i * 16 + Math.sin(t + i) * 3, yy, 6, 3, '#ffd9b0', 0.10 + 0.06 * Math.sin(t * 3 + i));
+    }
+    // 门口灯笼光
+    rl(x0 + 4, gy - 8, W - 8, 8, '#ff8a3d', 0.18);
+  } else if (kind === 'music') {
+    // 黑胶橱窗
+    r(x0 + 8, wy, 52, wh, '#07060f');
+    for (let i = 0; i < 3; i++) {
+      const dx = x0 + 20 + i * 14, dy = wy + 12 + (i % 2) * 8;
+      oval(dx, dy, 6, 6, '#12101f');
+      oval(dx, dy, 2, 2, K.trim);
+    }
+    rl(x0 + 8, wy, 52, wh, '#7a4bff', 0.1);
+    // 音箱
+    r(x0 + 62, wy, 12, 26, '#0c0a16');
+    oval(x0 + 68, wy + 8, 4, 4, '#241a3a');
+    oval(x0 + 68, wy + 19, 4, 4, '#241a3a');
+    // 门
+    r(x0 + 78, wy, 10, wh, '#120f22');
+    rl(x0 + 78, gy - 6, 10, 6, K.trim, 0.2);
+    // 音符
+    for (let i = 0; i < 3; i++) {
+      const yy = wy - 4 - ((t * 10 + i * 8) % 16);
+      rl(x0 + 14 + i * 18, yy, 2, 4, K.trim, 0.5 + 0.3 * Math.sin(t * 2 + i));
+    }
+  } else if (kind === 'cloth') {
+    // 橱窗 + 人台
+    r(x0 + 8, wy, 46, wh, '#1a0f1e');
+    rl(x0 + 8, wy, 46, wh, '#ff8ad5', 0.1);
+    // 人台
+    oval(x0 + 26, wy + 10, 4, 4, '#d8cfe0');
+    r(x0 + 21, wy + 14, 10, 10, '#ff8ad5');
+    r(x0 + 23, wy + 24, 3, 6, '#c96aa0');
+    r(x0 + 27, wy + 24, 3, 6, '#c96aa0');
+    // 衣架
+    r(x0 + 38, wy + 4, 14, 2, '#8a7a94');
+    for (let i = 0; i < 3; i++) r(x0 + 40 + i * 4, wy + 6, 3, 12, ['#ffcf4d', '#22e0ff', '#ff3ea5'][i]);
+    // 门
+    r(x0 + 58, wy, 30, wh, '#180e20');
+    r(x0 + 60, wy + 3, 26, wh - 6, '#2a1830');
+    rl(x0 + 58, gy - 6, 30, 6, K.trim, 0.2);
+  } else if (kind === 'bank') {
+    // 保险库门
+    r(x0 + 8, wy, W - 16, wh + 6, '#0a1414');
+    oval(x0 + cx - x0, wy + 16, 20, 18, '#1a2a26');
+    oval(x0 + cx - x0, wy + 16, 15, 14, '#0e1a16');
+    // 转柄
+    for (let a = 0; a < 4; a++) {
+      const ang = a * Math.PI / 2 + Math.PI / 4;
+      r(cx + Math.cos(ang) * 9 - 1, wy + 16 + Math.sin(ang) * 8 - 1, 3, 3, K.trim);
+    }
+    r(cx - 2, wy + 14, 4, 4, K.trim);
+    // 金条
+    for (let i = 0; i < 3; i++) r(x0 + 14 + i * 9, gy - 12, 8, 4, '#ffcf4d');
+    // 终端机
+    r(x0 + 12, wy - 6, 16, 12, '#0c1a16');
+    r(x0 + 14, wy - 4, 12, 7, K.trim);
+    // 绿光
+    rl(x0 + 8, gy - 10, W - 16, 10, K.trim, 0.14);
+  }
+
+  /* --- 门侧小物 --- */
+  if (kind === 'store') {
+    r(x0 + W - 10, gy - 14, 8, 14, '#0d2a1a');       // 垃圾桶
+    r(x0 + W - 10, gy - 15, 8, 2, '#3d8a5a');
+  }
+  if (kind === 'ramen') {
+    r(x0 - 6, gy - 8, 8, 8, '#2a1a0c');              // 凳子
+    r(x0 - 6, gy - 9, 8, 2, '#c8341f');
+    r(x0 + W - 4, gy - 8, 8, 8, '#2a1a0c');
+    r(x0 + W - 4, gy - 9, 8, 2, '#c8341f');
+  }
+  if (kind === 'cloth') {
+    r(x0 + 4, gy - 10, 5, 10, '#2a1830');            // 假人
+    oval(x0 + 6, gy - 13, 2, 2, '#c9bfd6');
+  }
+  if (kind === 'music') {
+    r(x0 - 5, gy - 6, 6, 6, '#0c0a16'); r(x0 - 5, gy - 7, 6, 1, K.trim);
+  }
+  // 门口光晕
+  rl(x0 + 6, gy - 8, W - 12, 8, K.trim, 0.10);
+  rl(cx - 20, gy - 3, 40, 3, K.trim, 0.32);
+}
+
+/* =========================================================================
+   金币 / 任务终点 / 小物件
+   ========================================================================= */
+function drawCoin(x, y, t, seed) {
+  const ph = Math.sin(t * 4 + (seed || 0));
+  const w = Math.abs(ph) * 5 + 1.5;
+  const cx = Math.round(x), cy = Math.round(y + Math.sin(t * 2 + (seed || 0)) * 1.2);
+  oval(cx, cy, w, 5, '#ffb02e');
+  oval(cx, cy, Math.max(1, w - 1.5), 3.5, '#ffe38a');
+  r(cx - 0.5, cy - 3, 1, 6, '#fff6c9');
+}
+
+function drawBeacon(x, gy, done, t, idx) {
+  // 任务旗杆
+  r(x - 1, gy - 34, 3, 34, '#2b3a56');
+  r(x - 1, gy - 34, 3, 2, '#5a7299');
+  const flap = Math.sin(t * 3 + idx) * 2;
+  if (done) {
+    r(x + 2, gy - 33, 16, 9, '#2a3a2a');
+    r(x + 2, gy - 33, 16, 1, '#5dff9b');
+    signText('✓', x + 10, gy - 28, '#5dff9b', 8, false);
+  } else {
+    r(x + 2, gy - 33 + flap, 18, 10, '#ff3ea5');
+    r(x + 2, gy - 33 + flap, 18, 1, '#ffb0d8');
+    signText(String(idx + 1), x + 11, gy - 28 + flap, '#2a0418', 8, false);
+  }
+  rl(x - 8, gy - 2, 16, 2, done ? '#5dff9b' : '#ff3ea5', 0.4);
+  // 未完成的光柱
+  if (!done) {
+    rl(x - 6, gy - 40, 12, 40, '#ff3ea5', 0.06 + 0.04 * Math.sin(t * 2));
+  }
+}
+
+/* =========================================================================
+   玩家（12x18 像素小人）
+   ========================================================================= */
+const COATS = [['#31497a', '#5ef0ff'], ['#5a1a44', '#ff7ad0'], ['#1a5a3c', '#7dffb0'], ['#5a4218', '#ffdd7a']];
+
+function drawPlayer(p, t) {
+  const x = Math.round(p.x), y = Math.round(p.y);
+  const f = p.face;
+  const [coat, trim] = COATS[G.up.coat % COATS.length];
+  const running = p.state === 'run';
+  const air = !p.onGround;
+  const ph = p.anim;
+
+  // 影子
+  rl(x - 2, y + p.h - 1, p.w + 4, 2, '#000000', 0.35);
+  // 微光（让人物在暗背景里跳出来）
+  ctx.globalAlpha = 0.08;
+  oval(x + 6, y + 9, 15, 15, '#7fe8ff');
+  ctx.globalAlpha = 1;
+
+  // 腿
+  const legA = running ? Math.sin(ph) * 3 : 0;
+  const legB = running ? -Math.sin(ph) * 3 : 0;
+  if (air) {
+    r(x + 2, y + 12, 3, 5, '#0d1526');
+    r(x + 7, y + 13, 3, 4, '#0d1526');
+  } else if (running) {
+    r(x + 2 + legA, y + 12, 3, 6, '#0d1526');
+    r(x + 7 + legB, y + 12, 3, 6, '#0d1526');
+    r(x + 1 + legA, y + 17, 5, 2, trim);
+    r(x + 6 + legB, y + 17, 5, 2, trim);
+  } else {
+    r(x + 2, y + 12, 3, 6, '#0d1526');
+    r(x + 7, y + 12, 3, 6, '#0d1526');
+    r(x + 1, y + 17, 5, 2, trim);
+    r(x + 6, y + 17, 5, 2, trim);
+  }
+
+  // 身体
+  r(x + 2, y + 5, 8, 8, coat);
+  r(x + 2, y + 5, 8, 1, trim);
+  r(x + 2, y + 5, 1, 8, shade(coat, 1.35));
+  r(x + 5, y + 6, 1, 7, '#0a1020');
+  // 手臂
+  if (air) {
+    r(x + 0, y + 5, 2, 5, coat);
+    r(x + 10, y + 5, 2, 5, coat);
+  } else {
+    const arm = running ? Math.sin(ph + Math.PI) * 2 : 0;
+    r(x + 0, y + 6 + arm, 2, 5, coat);
+    r(x + 10, y + 6 - arm, 2, 5, coat);
+  }
+  // 头
+  r(x + 2, y, 8, 7, '#d8a98a');
+  r(x + 1, y - 1, 9, 4, '#141826');
+  r(x + 1, y - 1, 9, 1, trim);
+  // 头发后侧
+  r(x + (f > 0 ? 1 : 8), y, 3, 4, '#141826');
+  // 眼睛 / 面罩
+  r(x + (f > 0 ? 7 : 4), y + 3, 2, 2, '#0c1220');
+  r(x + (f > 0 ? 9 : 3), y + 3, 1, 2, trim);
+  // 背包
+  r(x + (f > 0 ? 0 : 10), y + 6, 2, 5, '#2a1a10');
+}
+
+/* =========================================================================
+   上层步道 / 楼梯
+   ========================================================================= */
+function drawTerracePillars(p, pal) {
+  const base = 250;
+  for (let px = p.x + 22; px < p.x + p.w - 14; px += 92) {
+    const h = base - (p.y + 12);
+    if (h <= 6) continue;
+    r(px, p.y + 12, 6, h, '#1a2438');
+    r(px, p.y + 12, 1, h, '#2e3f5e');
+    r(px, p.y + 12, 6, 2, '#33456a');
+    rl(px + 6, p.y + 16, 1, 12, '#26354f', 1);
+  }
+}
+
+function drawTerrace(p, pal, t) {
+  const x = p.x, y = p.y, w = p.w;
+  r(x, y + 4, w, 12, pal.isl);
+  r(x, y + 4, w, 1, shade(pal.isl, 0.75));
+  r(x, y, w, 4, pal.top);
+  r(x, y, w, 1, pal.edge);
+  rl(x, y - 1, w, 1, pal.edge, 0.3);
+  rl(x, y + 5, w, 1, pal.edge, 0.16);
+  // 栏杆
+  for (let px = x + 5; px + 1 < x + w - 4; px += 13) r(px, y - 9, 1, 9, '#3d5170');
+  r(x + 3, y - 10, w - 6, 1, '#5878a8');
+  rl(x + 3, y - 9, w - 6, 1, '#000000', 0.35);
+}
+
+function drawStep(p, pal) {
+  const x = p.x, y = p.y, w = p.w;
+  const bottom = 250;
+  r(x, y + 3, w, bottom - y - 3, pal.isl);
+  rl(x + 1, y + 4, w - 2, bottom - y - 5, '#000000', 0.12);
+  rl(x, y + 3, 1, bottom - y - 3, '#ffffff', 0.05);
+  r(x, y, w, 3, pal.top);
+  r(x, y, w, 1, shade(pal.top, 1.2));
+  r(x, y + 3, w, 1, shade(pal.isl, 0.78));
+}
+
+const weather = { drops: [], snow: [], sparks: [] };
+
+function initWeather(kind, n) {
+  weather.drops.length = 0;
+  weather.snow.length = 0;
+  for (let i = 0; i < (n || 60); i++) {
+    weather.drops.push({ x: rnd(0, VIEW.w), y: rnd(0, VIEW.h), s: rnd(120, 260) });
+  }
+}
+
+function drawWeather(kind, t, dt) {
+  if (kind === 'rain') {
+    for (const d of weather.drops) {
+      d.y += d.s * dt;
+      d.x -= d.s * 0.25 * dt;
+      if (d.y > VIEW.h) { d.y = -6; d.x = rnd(0, VIEW.w + 120); }
+      r(d.x, d.y, 1, 5, '#8fd8ff44');
+    }
+  } else if (kind === 'dust') {
+    for (const d of weather.drops) {
+      d.y -= d.s * 0.15 * dt;
+      d.x += Math.sin(t + d.y * 0.05) * 4 * dt;
+      if (d.y < -4) { d.y = VIEW.h + 4; d.x = rnd(0, VIEW.w); }
+      r(d.x, d.y, 1, 1, '#7dffd044');
+    }
+  } else if (kind === 'spark') {
+    for (const d of weather.drops) {
+      d.y -= d.s * 0.5 * dt;
+      if (d.y < -4) { d.y = VIEW.h + 4; d.x = rnd(0, VIEW.w); }
+      r(d.x, d.y, 1, 2, '#ff8a3d55');
+    }
+  }
+}
+
+/* ==== 12-city.js ==== */
+'use strict';
+/* =========================================================================
+   12 city — 背景天际线：三层视差、预渲染到离屏画布，楼体细节（霓虹灯带、
+   广告牌、竖招牌、天线、水箱、阳台、管道、收分造型）
+   ========================================================================= */
+
+const NEON = ['#22e0ff', '#ff3ea5', '#ffcf4d', '#5dff9b', '#7a4bff', '#ff8a3d'];
+const CITY = { cache: {}, key: '' };
+
+function mixHex(a, b, t) {
+  const na = parseInt(a.slice(1), 16), nb = parseInt(b.slice(1), 16);
+  let r = Math.round(((na >> 16) & 255) * (1 - t) + ((nb >> 16) & 255) * t);
+  let g = Math.round(((na >> 8) & 255) * (1 - t) + ((nb >> 8) & 255) * t);
+  let bl = Math.round((na & 255) * (1 - t) + (nb & 255) * t);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + bl).toString(16).slice(1);
+}
+
+function bR(c, x, y, w, h, col) {
+  c.fillStyle = col;
+  c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+}
+function bA(c, x, y, w, h, col, a) {
+  c.globalAlpha = a;
+  bR(c, x, y, w, h, col);
+  c.globalAlpha = 1;
+}
+
+/* ---------- 单栋楼 ---------- */
+function drawTower(c, x, bw, h, baseY, pal, rng, lv, fog) {
+  const y = baseY - h;
+  const skyLow = pal.sky[pal.sky.length - 1];
+  const skyHigh = pal.sky[Math.max(0, pal.sky.length - 2)];
+  const body = mixHex(skyLow, pal.mid || '#182a56', fog);
+  const bodyDark = mixHex(skyHigh, '#0a1020', 0.55);
+  const accent = NEON[(rng() * NEON.length) | 0];
+  const accent2 = NEON[(rng() * NEON.length) | 0];
+  const style = (rng() * 4) | 0;
+
+  const topH = style === 1 || style === 3 ? Math.round(h * (0.16 + rng() * 0.14)) : 0;
+  const shaftW = Math.round(bw * (0.56 + rng() * 0.16));
+
+  // 主楼体
+  bR(c, x, y + topH, bw, h - topH, body);
+  // 右侧暗面
+  bR(c, x + bw - 3, y + topH, 3, h - topH, mixHex(body, '#000000', 0.45));
+  // 左侧亮边（受 neon 反光）
+  if (lv >= 2) bR(c, x, y + topH, 1, h - topH, mixHex(body, accent, 0.35));
+
+  // 收分塔顶
+  if (topH > 0) {
+    bR(c, x + (bw - shaftW) / 2, y, shaftW, topH + 2, mixHex(body, '#ffffff', 0.06));
+    bR(c, x + (bw - shaftW) / 2 + shaftW - 2, y, 2, topH + 2, mixHex(body, '#000000', 0.4));
+  }
+
+  const roofY = topH > 0 ? y : y;
+  const roofX = topH > 0 ? x + (bw - shaftW) / 2 : x;
+  const roofW = topH > 0 ? shaftW : bw;
+
+  // 楼顶霓虹压边
+  if (lv >= 2) {
+    bR(c, roofX, roofY, roofW, 1, accent);
+    bA(c, roofX, roofY + 1, roofW, 3, accent, 0.14);
+  } else {
+    bR(c, roofX, roofY, roofW, 1, mixHex(body, '#ffffff', 0.18));
+  }
+
+  // 楼顶设备
+  if (lv >= 2) {
+    const rk = rng();
+    if (rk < 0.4) {
+      // 天线
+      const ax = roofX + roofW * (0.3 + rng() * 0.4);
+      bR(c, ax, roofY - 13, 1, 13, mixHex(body, '#ffffff', 0.35));
+      bR(c, ax - 1, roofY - 14, 3, 2, '#ff4d6d');
+    } else if (rk < 0.7) {
+      // 水箱
+      const tx = roofX + roofW * 0.5 - 5;
+      bR(c, tx, roofY - 9, 10, 9, mixHex(body, '#ffffff', 0.12));
+      bR(c, tx + 1, roofY - 11, 8, 2, mixHex(body, '#000000', 0.3));
+      bR(c, tx, roofY - 9, 10, 1, mixHex(body, accent, 0.3));
+    } else {
+      // 空调机组
+      bR(c, roofX + 3, roofY - 6, 8, 6, mixHex(body, '#ffffff', 0.1));
+      bR(c, roofX + 3, roofY - 6, 8, 1, mixHex(body, '#ffffff', 0.25));
+    }
+    if (rng() > 0.72) bR(c, roofX + roofW - 10, roofY - 3, 4, 3, mixHex(body, '#ffffff', 0.2));
+  }
+
+  // 广告牌（挂在楼体上沿）
+  if (lv >= 3 && rng() > 0.55) {
+    const bwd = Math.min(roofW - 6, 26 + rng() * 14);
+    const bx = roofX + (roofW - bwd) / 2;
+    const by = roofY + 5;
+    bR(c, bx - 1, by - 1, bwd + 2, 15, mixHex(accent, '#ffffff', 0.25));
+    bR(c, bx, by, bwd, 13, '#080b14');
+    const bars = 2 + ((rng() * 2) | 0);
+    for (let i = 0; i < bars; i++) {
+      bR(c, bx + 2, by + 2 + i * 4, bwd - 4, 2, i % 2 ? accent2 : accent);
+    }
+    bA(c, bx - 2, by + 15, bwd + 4, 4, accent, 0.12);
+  }
+
+  // 竖向霓虹招牌
+  if (lv >= 2 && rng() > 0.45) {
+    const side = rng() > 0.5;
+    const sx = side ? x + bw - 5 : x + 1;
+    const sy = y + topH + 8 + rng() * 10;
+    const sh = 16 + rng() * 22;
+    bR(c, sx, sy, 4, sh, mixHex(accent2, '#000000', 0.15));
+    for (let i = 0; i < 4; i++) bA(c, sx + 1, sy + 3 + i * 5, 2, 2, '#ffffff', 0.55);
+    bA(c, sx - 3, sy, 10, sh, accent2, 0.10);
+  }
+
+  // 窗户
+  if (lv >= 1) {
+    const pad = 4;
+    const cw = lv === 3 ? 5 : 4;
+    const ch = lv === 3 ? 4 : 3;
+    const gx = lv === 3 ? 3 : 4;
+    const gy = lv === 3 ? 4 : 4;
+    const cols = Math.floor((bw - pad * 2) / (cw + gx));
+    const rows = Math.floor((h - topH - 8) / (ch + gy));
+    const litP = lv === 3 ? 0.5 : (lv === 2 ? 0.42 : 0.3);
+    const WC = ['#ffe6b8', '#cfe9ff', '#ffd9a8', '#a8e6ff'];
+    for (let ry = 0; ry < rows; ry++) {
+      for (let rx = 0; rx < cols; rx++) {
+        const wx = x + pad + rx * (cw + gx);
+        const wy = y + topH + 6 + ry * (ch + gy);
+        // 窗框
+        bA(c, wx, wy, cw, ch, '#050810', 0.75);
+        if (rng() < litP) {
+          const col = rng() > 0.85 ? accent : WC[(rng() * WC.length) | 0];
+          bA(c, wx + 1, wy + 1, cw - 2, ch - 2, col, lv === 3 ? 0.55 + rng() * 0.45 : 0.4 + rng() * 0.35);
+        }
+      }
+    }
+    // 楼层横线
+    if (lv === 3) {
+      for (let fy = y + topH + 10; fy < baseY - 6; fy += 18) bA(c, x, fy, bw, 1, '#000000', 0.35);
+    }
+  }
+
+  // 阳台 / 管道 / 外挂机（近景）
+  if (lv === 3) {
+    if (rng() > 0.55) {
+      for (let i = 0; i < 3; i++) {
+        const by = y + topH + 12 + i * 16 + rng() * 4;
+        bR(c, x - 2, by, 7, 2, mixHex(body, '#ffffff', 0.16));
+      }
+    }
+    if (rng() > 0.5) {
+      const px2 = x + 6 + rng() * (bw - 14);
+      bR(c, px2, y + topH + 6, 2, h - topH - 10, mixHex(body, '#000000', 0.3));
+      bR(c, px2, y + topH + 6, 1, h - topH - 10, mixHex(body, '#ffffff', 0.10));
+    }
+    if (rng() > 0.6) {
+      const ax2 = x + 4 + rng() * (bw - 12);
+      bR(c, ax2, y + topH + 22, 6, 4, mixHex(body, '#ffffff', 0.18));
+    }
+  }
+
+  // 楼底灯光（街道反光）
+  if (lv >= 2) bA(c, x + 2, baseY - 3, bw - 4, 3, accent, 0.22);
+  // 整体霓虹晕
+  if (lv === 3) bA(c, x - 4, y, bw + 8, h, accent, 0.035);
+}
+
+/* ---------- 一层城市 ---------- */
+function buildLayer(pal, seed, lv, baseY, hMin, hMax, fog) {
+  const W = 1600, H = VIEW.h;
+  const cv = document.createElement('canvas');
+  cv.width = W;
+  cv.height = H;
+  const c = cv.getContext('2d');
+  c.imageSmoothingEnabled = false;
+  const rng = mulberry32(seed);
+  let x = -30;
+  while (x < W - 60) {
+    const bw = Math.round(lv === 1 ? 18 + rng() * 30 : (lv === 2 ? 30 + rng() * 44 : 44 + rng() * 66));
+    if (x + bw > W - 4) break;
+    const h = Math.round(hMin + rng() * (hMax - hMin));
+    drawTower(c, x, bw, h, baseY + Math.round((rng() - 0.5) * 8), pal, rng, lv, fog);
+    x += bw + Math.round(rng() * (lv === 3 ? 6 : 14));
+  }
+  return cv;
+}
+
+/* ---------- 场景预制 ---------- */
+function darkenLayer(cv, k) {
+  const c = cv.getContext('2d');
+  c.globalCompositeOperation = 'source-atop';
+  c.fillStyle = 'rgba(3,5,10,' + k + ')';
+  c.fillRect(0, 0, cv.width, cv.height);
+  c.globalCompositeOperation = 'source-over';
+}
+
+function buildCityFor(scene) {
+  const key = scene.id + ':' + (scene.world || 0);
+  if (CITY.key === key) return;
+  CITY.key = key;
+  CITY.cache = {};
+  const pal = scene.pal;
+  CITY.cache.far = buildLayer(pal, 1337 + (scene.world || 0) * 11, 1, 250, 70, 190, 0.62);
+  CITY.cache.mid = buildLayer(pal, 2401 + (scene.world || 0) * 17, 2, 268, 60, 165, 0.34);
+  CITY.cache.near = buildLayer(pal, 3571 + (scene.world || 0) * 23, 3, 330, 78, 150, 0.0);
+  darkenLayer(CITY.cache.near, 0.5);   // 近景压暗，别抢前景平台
+}
+
+function blitLayer(cv, factor, y, alpha) {
+  if (!cv) return;
+  const W = cv.width;
+  let off = (CAM.x * factor) % W;
+  if (off < 0) off += W;
+  ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+  ctx.drawImage(cv, -Math.round(off), Math.round(y));
+  ctx.drawImage(cv, -Math.round(off) + W, Math.round(y));
+  ctx.globalAlpha = 1;
+}
+
+function drawCityLayers(skipNear, nearAlpha) {
+  if (!CITY.cache.far) return;
+  blitLayer(CITY.cache.far, 0.10, 0);
+  blitLayer(CITY.cache.mid, 0.24, 0);
+  if (!skipNear) blitLayer(CITY.cache.near, 0.46, 0, nearAlpha === undefined ? 1 : nearAlpha);
+}
+
+/* =========================================================================
+   岛上的连排背街楼（预渲染成一条连续街墙，填掉建筑之间的缝）
+   ========================================================================= */
+function buildBackRowCanvas(sc) {
+  const p0 = sc.platforms[0];
+  const H = 220;
+  const W = Math.ceil(p0.w) + 44;
+  const cv = document.createElement('canvas');
+  cv.width = W;
+  cv.height = H;
+  const c = cv.getContext('2d');
+  c.imageSmoothingEnabled = false;
+
+  const rng = mulberry32(Math.floor(p0.x) * 31 + 7);
+  const gy = H - 8;
+  const bodies = ['#121a2e', '#151f38', '#101a2c', '#182342', '#141c33'];
+  const WC = ['#ffe6b8', '#cfe9ff', '#ffd9a8', '#a8e6ff'];
+  const neon = sc.pal.edge;
+
+  let x = 0;
+  while (x < W) {
+    const bw = 24 + Math.round(rng() * 48);
+    const bh = 44 + Math.round(rng() * 96);
+    c.fillStyle = bodies[(rng() * bodies.length) | 0];
+    c.fillRect(x, gy - bh, bw + 1, bh);
+    c.fillStyle = '#26365299';
+    c.fillRect(x, gy - bh, bw + 1, 2);
+
+    const cols = Math.max(1, Math.floor((bw - 6) / 8));
+    const rows = Math.max(1, Math.floor((bh - 10) / 9));
+    for (let ry = 0; ry < rows; ry++) {
+      for (let cx2 = 0; cx2 < cols; cx2++) {
+        const wx = x + 4 + cx2 * 8;
+        const wy = gy - bh + 5 + ry * 9;
+        if (rng() > 0.58) {
+          c.globalAlpha = 0.4 + rng() * 0.4;
+          c.fillStyle = WC[(rng() * WC.length) | 0];
+          c.fillRect(wx, wy, 4, 4);
+          c.globalAlpha = 1;
+        } else {
+          c.fillStyle = 'rgba(4,7,14,.85)';
+          c.fillRect(wx, wy, 4, 4);
+        }
+      }
+    }
+
+    if (rng() > 0.5) {
+      c.globalAlpha = 0.3;
+      c.fillStyle = neon;
+      c.fillRect(x, gy - bh - 1, bw, 1);
+      c.fillRect(x, gy - bh + 2, bw, 1);
+      c.globalAlpha = 1;
+    }
+    if (rng() > 0.7) {
+      const sx = x + 3 + rng() * Math.max(1, bw - 10);
+      c.globalAlpha = 0.14;
+      c.fillStyle = '#ffffff';
+      c.fillRect(sx, gy - bh + 8, 3, 16);
+      c.globalAlpha = 1;
+    }
+    if (rng() > 0.72) {
+      c.fillStyle = '#2a3a58';
+      c.fillRect(x + 3, gy - bh + 6, 5, 4);
+    }
+    x += bw + 1;   // 紧挨着，形成连续街墙
+  }
+  return { cv, x: p0.x - 22, y: 250 - (H - 8) };
+}
+
+/* ==== 14-shops.js ==== */
+'use strict';
+/* =========================================================================
+   14 shops — 十种店面（覆盖 10-art 里的旧版 drawShop）+ 不可进入的大型建筑
+   ========================================================================= */
+
+const SHOP_ART = {
+  store: { body: '#1c2a48', trim: '#22e0ff', sign: '24H 便利店', bg: '#22e0ff', fg: '#04121a', win: 'shelf', awn: 'stripe' },
+  cyber: { body: '#251a33', trim: '#ff3ea5', sign: '义体诊所', bg: '#a0165e', fg: '#ffffff', win: 'arms', awn: 'none' },
+  ramen: { body: '#2f1d0c', trim: '#ffcf4d', sign: '樱 拉 面', bg: '#ffcf4d', fg: '#2a1503', win: 'noren', awn: 'noren' },
+  music: { body: '#1a1e38', trim: '#7a4bff', sign: '唱 片 行', bg: '#4a22a8', fg: '#e9e2ff', win: 'vinyl', awn: 'stripe' },
+  cloth: { body: '#2b1a38', trim: '#ff8ad5', sign: '霓 裳', bg: '#ff8ad5', fg: '#2a0618', win: 'mannequin', awn: 'stripe' },
+  bank: { body: '#152828', trim: '#5dff9b', sign: '芯 片 兑 换', bg: '#5dff9b', fg: '#02110c', win: 'vault', awn: 'none' },
+  cafe: { body: '#2e2118', trim: '#ffb347', sign: '咖 啡 站', bg: '#ffb347', fg: '#2a1403', win: 'cups', awn: 'plain' },
+  flower: { body: '#17281c', trim: '#5dff9b', sign: '花 店', bg: '#5dff9b', fg: '#06231a', win: 'flowers', awn: 'green' },
+  tool: { body: '#22262e', trim: '#ff8a3d', sign: '五 金 铺', bg: '#ff8a3d', fg: '#241203', win: 'tools', awn: 'none' },
+  arcade: { body: '#120e24', trim: '#7a4bff', sign: '街 机 厅', bg: '#7a4bff', fg: '#efe6ff', win: 'screens', awn: 'stripe' }
+};
+
+function drawShop(kind, x, gy, t) {
+  const A = SHOP_ART[kind] || SHOP_ART.store;
+  const W = SHOP_W, H = SHOP_H;
+  const x0 = Math.round(x - W / 2), y0 = Math.round(gy - H);
+  const cx = x;
+
+  rl(x0 + 6, gy - 4, W - 12, 5, '#000000', 0.35);
+
+  // 墙体
+  r(x0, y0 + 18, W, H - 18, A.body);
+  for (let yy = y0 + 22; yy < gy - 4; yy += 6) rl(x0 + 1, yy, W - 2, 1, '#000000', 0.26);
+  r(x0, y0 + 18, 4, H - 18, '#0b1020');
+  r(x0 + W - 4, y0 + 18, 4, H - 18, '#0b1020');
+
+  // 招牌
+  const sy = y0 + 2;
+  r(x0 + 4, sy, W - 8, 16, '#080c16');
+  r(x0 + 4, sy, W - 8, 2, A.trim);
+  rl(x0 + 4, sy + 14, W - 8, 2, A.trim, 0.4);
+  r(x0 + 8, sy + 4, W - 16, 9, A.bg);
+  signText(A.sign, cx, sy + 8.5, A.fg, 8, false);
+
+  // 雨棚
+  if (A.awn === 'stripe') {
+    const aw = W - 10;
+    for (let i = 0; i < aw / 8; i++) r(x0 + 5 + i * 8, sy + 16, 8, 5, i % 2 ? A.trim : '#f2f7ff');
+    r(x0 + 5, sy + 21, aw, 1, '#00000055');
+  } else if (A.awn === 'green') {
+    for (let i = 0; i < (W - 12) / 8; i++) r(x0 + 6 + i * 8, sy + 16, 8, 5, i % 2 ? '#2f7a4a' : '#5dff9b');
+  } else if (A.awn === 'plain') {
+    r(x0 + 5, sy + 16, W - 10, 4, '#8a5a2a');
+    r(x0 + 5, sy + 20, W - 10, 1, '#c98a4a');
+  } else if (A.awn === 'noren') {
+    r(x0 + 6, sy + 16, W - 12, 2, '#3a2a1a');
+  }
+
+  const wy = y0 + 30, wh = 30;
+
+  if (A.win === 'shelf') {
+    r(x0 + 8, wy, 44, wh, '#0a2230');
+    r(x0 + 8, wy, 44, 2, '#2ad0ff');
+    for (let i = 0; i < 3; i++) {
+      r(x0 + 11, wy + 7 + i * 8, 38, 3, '#123448');
+      const cols = ['#ff5ad9', '#5dff9b', '#ffcf4d', '#22e0ff'];
+      for (let j = 0; j < 7; j++) r(x0 + 12 + j * 5, wy + 4 + i * 8, 3, 3, cols[(i + j) % 4]);
+    }
+    rl(x0 + 8, wy, 44, wh, '#9fe8ff', 0.10);
+    r(x0 + 12, wy + 2, 2, 24, '#ffffff22');
+    r(x0 + 58, wy, 30, wh, '#08161f');
+    r(x0 + 58, wy, 30, 2, A.trim);
+    r(x0 + 60, wy + 4, 12, wh - 6, '#12384a');
+    r(x0 + 74, wy + 4, 12, wh - 6, '#12384a');
+    r(x0 + 72, wy + 4, 2, wh - 6, '#04121a');
+    r(x0 + 62, wy + 14, 3, 10, A.trim);
+    r(x0 + W - 10, gy - 14, 8, 14, '#0d2a1a');
+    r(x0 + W - 10, gy - 15, 8, 2, '#3d8a5a');
+  } else if (A.win === 'arms') {
+    r(x0 + 8, wy, 50, wh, '#0d0a16');
+    for (let i = 0; i < 4; i++) r(x0 + 10, wy + 4 + i * 7, 46, 1, '#2a1a3a');
+    for (let i = 0; i < 3; i++) {
+      const ax = x0 + 14 + i * 15;
+      r(ax, wy + 6, 5, 14, '#5a4a6a');
+      r(ax, wy + 6, 5, 2, '#8a7aa0');
+      r(ax + 1, wy + 19, 3, 5, '#3a2f4a');
+    }
+    rl(x0 + 8, wy, 50, wh, '#ff3ea5', 0.08);
+    r(x0 + 30, wy - 2, 12, 4, '#ff2b4d');
+    r(x0 + 34, wy - 6, 4, 12, '#ff2b4d');
+    r(x0 + 64, wy, 24, wh, '#120c1c');
+    r(x0 + 66, wy + 3, 20, wh - 6, '#241634');
+    r(x0 + 74, wy + 3, 1, wh - 6, '#0a0610');
+  } else if (A.win === 'noren') {
+    r(x0 + 8, wy, 80, wh, '#2a1a0c');
+    for (let i = 0; i < 8; i++) r(x0 + 8 + i * 10, wy, 1, wh, '#1a0f06');
+    for (let i = 0; i < 4; i++) {
+      r(x0 + 10 + i * 19, wy, 17, 12, '#c8341f');
+      rl(x0 + 10 + i * 19, wy + 11, 17, 1, '#7a1a0c', 0.9);
+    }
+    signText('拉', x0 + 18, wy + 6, '#ffe6c9', 8, false);
+    signText('麺', x0 + 56, wy + 6, '#ffe6c9', 8, false);
+    oval(x0 + 6, wy - 4, 4, 5, '#ff5a3d');
+    rl(x0 + 6, wy - 10, 1, 3, '#ffcf4d', 0.8);
+    oval(x0 + W - 8, wy - 4, 4, 5, '#ff5a3d');
+    for (let i = 0; i < 4; i++) {
+      const yy = wy + 16 - ((t * 14 + i * 9) % 30);
+      rl(x0 + 20 + i * 16 + Math.sin(t + i) * 3, yy, 6, 3, '#ffd9b0', 0.10 + 0.06 * Math.sin(t * 3 + i));
+    }
+    rl(x0 + 4, gy - 8, W - 8, 8, '#ff8a3d', 0.18);
+    r(x0 - 6, gy - 8, 8, 8, '#2a1a0c');
+    r(x0 - 6, gy - 9, 8, 2, '#c8341f');
+    r(x0 + W - 4, gy - 8, 8, 8, '#2a1a0c');
+    r(x0 + W - 4, gy - 9, 8, 2, '#c8341f');
+  } else if (A.win === 'vinyl') {
+    r(x0 + 8, wy, 52, wh, '#12101f');
+    for (let i = 0; i < 3; i++) {
+      const dx = x0 + 20 + i * 14, dy = wy + 12 + (i % 2) * 8;
+      oval(dx, dy, 6, 6, '#2c2444');
+      oval(dx, dy, 4, 4, '#413466');
+      oval(dx, dy, 2, 2, '#a78bff');
+      rl(dx - 3, dy - 4, 2, 2, '#ffffff', 0.5);
+    }
+    rl(x0 + 8, wy, 52, wh, '#7a4bff', 0.1);
+    r(x0 + 62, wy, 12, 26, '#0c0a16');
+    oval(x0 + 68, wy + 8, 4, 4, '#241a3a');
+    oval(x0 + 68, wy + 19, 4, 4, '#241a3a');
+    r(x0 + 78, wy, 10, wh, '#120f22');
+    for (let i = 0; i < 3; i++) {
+      const yy = wy - 4 - ((t * 10 + i * 8) % 16);
+      rl(x0 + 14 + i * 18, yy, 2, 4, A.trim, 0.5 + 0.3 * Math.sin(t * 2 + i));
+    }
+    r(x0 - 5, gy - 6, 6, 6, '#0c0a16');
+    r(x0 - 5, gy - 7, 6, 1, A.trim);
+  } else if (A.win === 'mannequin') {
+    r(x0 + 8, wy, 46, wh, '#1a0f1e');
+    rl(x0 + 8, wy, 46, wh, '#ff8ad5', 0.1);
+    oval(x0 + 26, wy + 10, 4, 4, '#d8cfe0');
+    r(x0 + 21, wy + 14, 10, 10, '#ff8ad5');
+    r(x0 + 23, wy + 24, 3, 6, '#c96aa0');
+    r(x0 + 27, wy + 24, 3, 6, '#c96aa0');
+    r(x0 + 38, wy + 4, 14, 2, '#8a7a94');
+    for (let i = 0; i < 3; i++) r(x0 + 40 + i * 4, wy + 6, 3, 12, ['#ffcf4d', '#22e0ff', '#ff3ea5'][i]);
+    r(x0 + 58, wy, 30, wh, '#180e20');
+    r(x0 + 60, wy + 3, 26, wh - 6, '#2a1830');
+    r(x0 + 4, gy - 10, 5, 10, '#2a1830');
+    oval(x0 + 6, gy - 13, 2, 2, '#c9bfd6');
+  } else if (A.win === 'vault') {
+    r(x0 + 8, wy, W - 16, wh + 6, '#0a1414');
+    oval(x, wy + 16, 20, 18, '#1a2a26');
+    oval(x, wy + 16, 15, 14, '#0e1a16');
+    for (let a = 0; a < 4; a++) {
+      const ang = a * Math.PI / 2 + Math.PI / 4;
+      r(cx + Math.cos(ang) * 9 - 1, wy + 16 + Math.sin(ang) * 8 - 1, 3, 3, A.trim);
+    }
+    r(cx - 2, wy + 14, 4, 4, A.trim);
+    for (let i = 0; i < 3; i++) r(x0 + 14 + i * 9, gy - 12, 8, 4, '#ffcf4d');
+    r(x0 + 12, wy - 6, 16, 12, '#0c1a16');
+    r(x0 + 14, wy - 4, 12, 7, A.trim);
+    rl(x0 + 8, gy - 10, W - 16, 10, A.trim, 0.14);
+  } else if (A.win === 'cups') {
+    // 咖啡站：吧台、咖啡机、杯子
+    r(x0 + 8, wy, 62, wh, '#2e1d0a');
+    r(x0 + 8, wy + 18, 62, 12, '#4a2e12');
+    r(x0 + 8, wy + 18, 62, 1, '#8a5a2a');
+    // 咖啡机
+    r(x0 + 12, wy + 4, 16, 14, '#4a3620');
+    r(x0 + 14, wy + 6, 12, 6, '#e0a860');
+    r(x0 + 16, wy + 14, 3, 4, '#241608');
+    r(x0 + 22, wy + 14, 3, 4, '#241608');
+    // 杯子排
+    for (let i = 0; i < 5; i++) {
+      r(x0 + 34 + i * 6, wy + 12, 4, 5, '#f2e6d0');
+      r(x0 + 34 + i * 6, wy + 12, 4, 1, '#8a5a2a');
+    }
+    // 蒸汽
+    for (let i = 0; i < 3; i++) {
+      const yy = wy + 2 - ((t * 12 + i * 10) % 22);
+      rl(x0 + 18 + i * 5 + Math.sin(t + i) * 2, yy, 3, 3, '#ffe6c9', 0.18);
+    }
+    r(x0 + 72, wy, 16, wh, '#1a1008');
+    r(x0 + 74, wy + 3, 12, wh - 6, '#2e1d0c');
+    r(x0 + 74, wy + 3, 12, 1, A.trim);
+    // 户外小桌
+    r(x0 + W - 12, gy - 9, 12, 2, '#5a3a1c');
+    r(x0 + W - 8, gy - 9, 2, 9, '#3a2410');
+  } else if (A.win === 'flowers') {
+    // 花店：橱窗里三层花桶
+    r(x0 + 8, wy, 52, wh, '#0e1c12');
+    for (let i = 0; i < 5; i++) {
+      const fx = x0 + 13 + i * 10;
+      r(fx, wy + 14, 7, 10, '#2a3a2a');
+      oval(fx + 3, wy + 12, 4, 4, ['#ff5ad9', '#ffcf4d', '#ff8ad5', '#c9a0ff', '#5dff9b'][i]);
+      oval(fx + 3, wy + 8, 2.5, 3, '#3d8a5a');
+    }
+    r(x0 + 8, wy + 24, 52, 2, '#1e3a26');
+    rl(x0 + 8, wy, 52, wh, '#5dff9b', 0.08);
+    r(x0 + 64, wy, 24, wh, '#101c14');
+    r(x0 + 66, wy + 3, 20, wh - 6, '#1a2c20');
+    // 门口花桶
+    r(x0 - 4, gy - 10, 9, 10, '#2a3a2a');
+    oval(x0, gy - 12, 5, 4, '#ff5ad9');
+    r(x0 + W - 6, gy - 9, 8, 9, '#2a3a2a');
+    oval(x0 + W - 2, gy - 11, 4, 4, '#ffcf4d');
+  } else if (A.win === 'tools') {
+    // 五金铺：洞洞板挂工具
+    r(x0 + 8, wy, 56, wh, '#14181e');
+    for (let i = 0; i < 8; i++) r(x0 + 10 + i * 7, wy + 2, 1, wh - 4, '#1e242c');
+    // 扳手 / 锤子 / 锯
+    r(x0 + 14, wy + 6, 3, 14, '#8a95a5');
+    r(x0 + 12, wy + 5, 7, 3, '#8a95a5');
+    r(x0 + 28, wy + 7, 3, 10, '#6a4420');
+    r(x0 + 25, wy + 4, 9, 5, '#8a95a5');
+    r(x0 + 42, wy + 6, 4, 16, '#a5b0c0');
+    r(x0 + 40, wy + 6, 8, 2, '#6a7a8a');
+    r(x0 + 54, wy + 4, 4, 18, '#5a6a7a');
+    rl(x0 + 8, wy, 56, wh, '#ff8a3d', 0.06);
+    r(x0 + 68, wy, 20, wh, '#0e1218');
+    r(x0 + 70, wy + 3, 16, wh - 6, '#2a1c10');
+    r(x0 + 70, wy + 3, 16, 2, A.trim);
+    // 门口堆的钢管
+    for (let i = 0; i < 3; i++) r(x0 + W - 10, gy - 6 + i, 12, 2, '#6a7a8a');
+  } else if (A.win === 'screens') {
+    // 街机厅：一排发光机台
+    r(x0 + 8, wy, W - 16, wh, '#08060f');
+    for (let i = 0; i < 4; i++) {
+      const ax = x0 + 11 + i * 18;
+      r(ax, wy + 6, 14, 20, '#181230');
+      r(ax + 1, wy + 8, 12, 10, ['#22e0ff', '#ff3ea5', '#ffcf4d', '#5dff9b'][i]);
+      r(ax + 3, wy + 20, 8, 2, '#0a0814');
+      r(ax + 2, wy + 26, 10, 2, '#2a1a4a');
+    }
+    for (let i = 0; i < 5; i++) {
+      rl(x0 + 10 + i * 16, wy - 6 - ((t * 14 + i * 12) % 20), 2, 2, A.trim, 0.5);
+    }
+    rl(x0 + 8, wy, W - 16, wh, '#7a4bff', 0.12);
+    r(x0 + W - 12, gy - 18, 8, 18, '#141024');
+    r(x0 + W - 11, gy - 16, 6, 8, A.trim);
+  }
+
+  // 门口光
+  rl(x0 + 6, gy - 8, W - 12, 8, A.trim, 0.10);
+  rl(cx - 20, gy - 3, 40, 3, A.trim, 0.30);
+}
+
+/* =========================================================================
+   不可进入的大型建筑（背景层次）
+   ========================================================================= */
+function drawBuildingProp(kind, x, gy, w, h, seed, t) {
+  const rng = mulberry32(seed | 0);
+  const x0 = Math.round(x - w / 2), y0 = Math.round(gy - h);
+  const dark = '#0e1830';
+  const body = '#1c2742';
+  const body2 = '#27354f';
+  const neon = ['#22e0ff', '#ff3ea5', '#ffcf4d', '#5dff9b'][(seed | 0) % 4];
+
+  if (kind === 'apart') {
+    // 居民楼：阳台 + 晾衣 + 空调
+    r(x0, y0, w, h, body);
+    r(x0, y0, w, 2, '#2b3a58');
+    r(x0 + w - 3, y0, 3, h, dark);
+    for (let fy = y0 + 8; fy < gy - 6; fy += 16) {
+      rl(x0, fy, w, 1, '#0a1018', 0.9);
+      const cols = Math.max(2, Math.floor((w - 8) / 9));
+      for (let c2 = 0; c2 < cols; c2++) {
+        const wx = x0 + 5 + c2 * 9;
+        r(wx, fy + 3, 5, 5, '#070c14');
+        if (rng() > 0.45) rl(wx + 1, fy + 4, 3, 3, '#ffe6b8', 0.45 + rng() * 0.4);
+      }
+      if (rng() > 0.6) {
+        // 晾衣杆
+        r(x0 + 2, fy + 1, w - 8, 1, '#3a4a66');
+        for (let k = 0; k < 3; k++) {
+          if (rng() > 0.4) r(x0 + 5 + k * 8 + rng() * 3, fy + 2, 3, 5, ['#ff5ad9', '#22e0ff', '#ffcf4d', '#f2f7ff'][(rng() * 4) | 0]);
+        }
+      }
+    }
+    // 楼顶：水箱 + 天线
+    r(x0 + w * 0.2, y0 - 7, w * 0.3, 7, '#2a3a58');
+    r(x0 + w * 0.72, y0 - 12, 1, 12, '#3a4a66');
+    r(x0 + w * 0.72 - 1, y0 - 13, 3, 2, '#ff4d6d');
+    // 门厅
+    r(x0 + w / 2 - 7, gy - 16, 14, 16, '#0a0f1a');
+    r(x0 + w / 2 - 5, gy - 14, 10, 14, '#1a2438');
+    rl(x0 + w / 2 - 9, gy - 2, 18, 2, neon, 0.5);
+  } else if (kind === 'factory') {
+    // 工厂：锯齿屋顶 + 烟囱 + 管道
+    r(x0, y0 + 14, w, h - 14, body);
+    // 锯齿顶
+    for (let i = 0; i < 4; i++) {
+      const sx = x0 + i * (w / 4);
+      ctx.fillStyle = body2;
+      ctx.beginPath();
+      ctx.moveTo(sx, y0 + 14);
+      ctx.lineTo(sx + w / 8, y0 + 2);
+      ctx.lineTo(sx + w / 4, y0 + 14);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // 烟囱
+    r(x0 + w * 0.14, y0 - 22, 9, 34, '#2a3248');
+    r(x0 + w * 0.14 - 1, y0 - 24, 11, 3, '#3a4a66');
+    for (let i = 0; i < 4; i++) {
+      const sy = y0 - 26 - ((t * 9 + i * 11) % 34);
+      rl(x0 + w * 0.14 + 1 + Math.sin(t + i) * 3, sy, 7, 4, '#8fa5c8', 0.10 + 0.05 * i);
+    }
+    // 高窗
+    for (let i = 0; i < 7; i++) {
+      const wx = x0 + 8 + i * (w - 16) / 7;
+      r(wx, y0 + 18, 7, 6, '#071018');
+      if (rng() > 0.35) rl(wx, y0 + 18, 7, 6, '#ffcf4d', 0.42);
+    }
+    // 腰部窄窗
+    for (let i = 0; i < 6; i++) {
+      const wx = x0 + 10 + i * (w - 20) / 6;
+      r(wx, y0 + 30, 5, 4, '#060e14');
+      if (rng() > 0.5) rl(wx, y0 + 30, 5, 4, '#22e0ff', 0.35);
+    }
+    // 霓虹厂牌
+    r(x0 + w * 0.3, y0 + 40, w * 0.4, 9, '#080c16');
+    r(x0 + w * 0.3, y0 + 40, w * 0.4, 1, neon);
+    signText('FACTORY', x0 + w * 0.5, y0 + 45, neon, 7, false);
+    // 黄黑警示条
+    for (let i = 0; i < 4; i++) r(x0 + w * 0.3 + i * 6, gy - 4, 3, 3, '#ffcf4d');
+    // 管道
+    r(x0 + w * 0.55, y0 + 14, 3, h - 20, '#3a4a66');
+    r(x0 + w * 0.55, y0 + 30, 3, 2, '#5a6a8a');
+    // 卷帘门
+    r(x0 + w * 0.3, gy - 18, w * 0.34, 18, '#0c1220');
+    for (let i = 0; i < 6; i++) r(x0 + w * 0.3, gy - 18 + i * 3, w * 0.34, 1, '#1a2438');
+    rl(x0 + w * 0.3, gy - 20, w * 0.34, 2, neon, 0.5);
+    // 警示灯
+    r(x0 + w - 8, y0 + 16, 3, 3, '#ff4d6d');
+  } else if (kind === 'warehouse') {
+    // 仓库：低矮 + 波纹墙 + 大门
+    r(x0, y0 + 8, w, h - 8, body);
+    for (let i = 0; i < w / 4; i++) rl(x0 + i * 4, y0 + 8, 1, h - 8, '#0e1626', 0.8);
+    r(x0, y0 + 6, w, 4, body2);
+    r(x0, y0 + 6, w, 1, neon);
+    r(x0 + w * 0.18, gy - 20, w * 0.3, 20, '#0b1018');
+    r(x0 + w * 0.18, gy - 20, w * 0.3, 1, '#3a4a66');
+    for (let i = 0; i < 5; i++) r(x0 + w * 0.18, gy - 17 + i * 4, w * 0.3, 1, '#141e30');
+    // 货箱
+    for (let i = 0; i < 3; i++) {
+      r(x0 + w * 0.62 + i * 9, gy - 9 - (i % 2) * 5, 8, 8 + (i % 2) * 5, '#33220f');
+      r(x0 + w * 0.62 + i * 9, gy - 9 - (i % 2) * 5, 8, 1, '#6a4420');
+    }
+    rl(x0 + w * 0.14, gy - 22, w * 0.4, 22, neon, 0.06);
+  } else {
+    // 停车楼：多层开口 + 车位 + 车
+    r(x0, y0 + 6, w, h - 6, body);
+    r(x0, y0 + 4, w, 3, body2);
+    const floors = Math.max(3, Math.floor((h - 12) / 18));
+    for (let f = 0; f < floors; f++) {
+      const fy = y0 + 10 + f * ((h - 14) / floors);
+      r(x0, fy, w, 1, '#2a3a58');
+      // 立柱
+      for (let c2 = 0; c2 < 3; c2++) r(x0 + 4 + c2 * ((w - 10) / 2.2), fy + 1, 3, (h - 14) / floors - 2, '#0a1018');
+      // 车
+      if (rng() > 0.45) {
+        const cxp = x0 + 8 + rng() * (w - 26);
+        r(cxp, fy + 6, 12, 5, ['#22e0ff', '#ff3ea5', '#ffcf4d', '#5dff9b'][(rng() * 4) | 0]);
+        r(cxp + 2, fy + 4, 8, 3, '#3a4a66');
+        r(cxp + 2, fy + 5, 6, 2, '#8fd8ff');
+      }
+    }
+    rl(x0, y0 + 4, w, 2, neon, 0.6);
+    r(x0 + w / 2 - 8, gy - 14, 16, 14, '#0a0f1a');
+    rl(x0 + w / 2 - 9, gy - 2, 18, 2, neon, 0.5);
+  }
+}
+
+/* =========================================================================
+   电梯
+   ========================================================================= */
+function drawLift(s, t) {
+  const gy = s.y;
+  const w = 34, x0 = Math.round(s.x - w / 2);
+  const top = 96;
+  const carH = 44;
+  // 轿厢位置只看电梯自己的楼层状态，跟玩家跳不跳无关
+  const targetY = s.car ? 150 - carH : gy - carH;
+  if (s.carY === undefined) s.carY = targetY;
+  s.carY += (targetY - s.carY) * 0.16;
+  const carY = Math.round(s.carY);
+
+  // 外框
+  r(x0 - 5, top - 9, w + 10, gy - top + 9, '#1b2740');
+  r(x0 - 4, top - 8, w + 8, 2, '#33456a');
+  r(x0 - 3, top - 6, 2, gy - top + 6, '#33456a');
+  r(x0 + w + 1, top - 6, 2, gy - top + 6, '#33456a');
+  // 玻璃井道
+  r(x0 + 1, top, w - 2, gy - top, '#0d1a2c');
+  rl(x0 + 3, top + 4, w - 6, gy - top - 8, '#22e0ff', 0.06);
+  // 导轨
+  r(x0 + 2, top + 2, 2, gy - top - 4, '#3d5373');
+  r(x0 + w - 4, top + 2, 2, gy - top - 4, '#3d5373');
+  // 横档
+  for (let yy = top + 26; yy < gy - 14; yy += 26) rl(x0 + 4, yy, w - 8, 1, '#16223a', 1);
+
+  // 地面门（先画，轿厢停在一层时会被轿厢盖住，看起来像开着门）
+  r(x0 - 4, gy - 34, w + 8, 34, '#243350');
+  r(x0 - 4, gy - 34, w + 8, 2, '#4a6088');
+  r(x0 - 2, gy - 31, 15, 31, '#2e3f5e');
+  r(x0 + 16, gy - 31, 15, 31, '#28374f');
+  r(x0 + 15, gy - 31, 1, 31, '#0a1220');
+  rl(x0 - 2, gy - 3, w + 4, 2, '#22e0ff', 0.3);
+
+  // 轿厢
+  r(x0 + 4, carY, w - 8, carH, '#31456a');
+  r(x0 + 4, carY, w - 8, 2, '#6a86b0');
+  r(x0 + 6, carY + 4, w - 12, carH - 8, '#16253c');
+  rl(x0 + 7, carY + 6, w - 14, 12, '#ffe6b8', 0.34);
+  rl(x0 + 7, carY + 18, w - 14, 1, '#ffe6b8', 0.5);
+  r(x0 + 4, carY + carH - 3, w - 8, 3, '#0e1a2b');
+  rl(x0 + 4, carY, w - 8, 1, '#7fd4ff', 0.55);
+  // 轿厢里的人
+  r(x0 + 13, carY + 19, 6, 14, '#31497a');
+  r(x0 + 14, carY + 14, 5, 5, '#d8a98a');
+
+  // 顶部楼层显示
+  r(x0 - 2, top - 24, w + 4, 14, '#070c16');
+  r(x0 - 2, top - 24, w + 4, 1, '#ff9f43');
+  signText(s.car ? '2F' : '1F', s.x, top - 17, '#ff9f43', 8, false);
+
+  // 呼叫灯
+  const blink = 0.55 + 0.45 * Math.sin(t * 3);
+  rl(x0 + w + 6, gy - 26, 5, 5, '#ff3ea5', blink);
+  rl(x0 + w + 3, gy - 29, 11, 11, '#ff3ea5', 0.1 * blink);
+  // 招牌
+  r(x0 - 4, gy - 58, w + 8, 13, '#070c16');
+  r(x0 - 4, gy - 58, w + 8, 1, '#22e0ff');
+  signText('电 梯', s.x, gy - 51, '#9fe8ff', 7, false);
+}
+
+/* =========================================================================
+   店铺内景（进店时画在面板上方）
+   ========================================================================= */
+function drawShopInterior(c2, shopId) {
+  const A = SHOP_ART[shopId] || SHOP_ART.store;
+  const shop = (typeof SHOPS !== 'undefined') ? SHOPS.find(s => s.id === shopId) : null;
+  const W = 480, H = 150;
+  const R2 = (x, y, w, h, c) => { c2.fillStyle = c; c2.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+
+  R2(0, 0, W, H, A.body);
+  const g = c2.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, 'rgba(0,0,0,.5)');
+  g.addColorStop(0.45, 'rgba(0,0,0,.12)');
+  g.addColorStop(1, 'rgba(0,0,0,.6)');
+  c2.fillStyle = g;
+  c2.fillRect(0, 0, W, H);
+
+  // 地砖
+  for (let i = 0; i < 11; i++) R2(i * 44, 122, 43, 28, i % 2 ? '#111a29' : '#0b111c');
+  R2(0, 122, W, 1, A.trim);
+  c2.globalAlpha = 1;
+
+  // 左侧橱窗：看得到外面的街
+  R2(10, 16, 118, 88, '#060d17');
+  R2(13, 19, 112, 82, '#0a1728');
+  const neon = ['#22e0ff', '#ff3ea5', '#ffcf4d', '#5dff9b', '#7a4bff'];
+  for (let i = 0; i < 6; i++) {
+    c2.globalAlpha = 0.55;
+    R2(18 + i * 18, 34 + ((i * 7) % 40), 9, 3, neon[i % 5]);
+    R2(20 + i * 17, 58 + ((i * 11) % 30), 5, 14, neon[(i + 2) % 5]);
+  }
+  c2.globalAlpha = 1;
+  R2(10, 16, 118, 3, '#2b3a56');
+  R2(10, 101, 118, 3, '#2b3a56');
+  R2(10, 16, 3, 88, '#2b3a56');
+  R2(125, 16, 3, 88, '#2b3a56');
+  R2(67, 16, 2, 88, '#22304a');
+
+  // 天花板灯条
+  for (let i = 0; i < 3; i++) {
+    R2(150 + i * 56, 8, 40, 3, '#e8f6ff');
+    c2.globalAlpha = 0.12;
+    R2(146 + i * 56, 11, 48, 26, '#9fe8ff');
+    c2.globalAlpha = 1;
+  }
+
+  // 货架
+  R2(140, 44, 168, 3, A.trim);
+  R2(140, 78, 168, 3, A.trim);
+  R2(140, 112, 168, 3, A.trim);
+  for (let i = 0; i < 3; i++) {
+    // 下层杂物
+    for (let k = 0; k < 8; k++) {
+      const col = ['#ff5ad9', '#5dff9b', '#ffcf4d', '#22e0ff', '#ff8a3d'][(i + k) % 5];
+      R2(146 + k * 20, 95 + (k % 2) * 3, 12, 14 - (k % 2) * 3, col);
+      c2.globalAlpha = 0.5;
+      R2(146 + k * 20, 95 + (k % 2) * 3, 12, 3, '#ffffff');
+      c2.globalAlpha = 1;
+    }
+  }
+  // 中层：这家店真正的货
+  if (shop) {
+    shop.items.forEach((it, i) => {
+      const bx = 150 + i * 54;
+      R2(bx, 52, 40, 24, '#0c1420');
+      R2(bx + 2, 54, 36, 20, A.bg);
+      c2.globalAlpha = 0.85;
+      R2(bx + 2, 54, 36, 4, '#ffffff');
+      c2.globalAlpha = 1;
+      c2.font = 'bold 10px "Microsoft YaHei",monospace';
+      c2.textAlign = 'center';
+      c2.fillStyle = A.fg;
+      c2.fillText(it.name.slice(0, 4), bx + 20, 69);
+      c2.textAlign = 'left';
+      // 价签
+      R2(bx + 8, 78, 24, 10, '#0b101c');
+      c2.font = 'bold 9px "Microsoft YaHei",monospace';
+      c2.textAlign = 'center';
+      c2.fillStyle = '#ffb02e';
+      c2.fillText('◎' + it.price, bx + 20, 86);
+      c2.textAlign = 'left';
+      // 价签挂线
+      R2(bx + 19, 74, 1, 4, '#2b3a56');
+    });
+  }
+
+  // 柜台
+  R2(310, 94, 164, 30, '#101a2b');
+  R2(310, 94, 164, 4, A.trim);
+  R2(312, 98, 160, 10, '#16223a');
+  R2(310, 122, 164, 6, '#0a1220');
+  R2(310, 121, 164, 1, '#000000');
+  // 柜台上的东西
+  R2(322, 84, 16, 10, '#1c2438');
+  R2(324, 79, 12, 6, '#2ad0ff');
+  R2(346, 87, 9, 7, '#ffcf4d');
+  R2(452, 80, 14, 14, '#0c1420');
+  R2(454, 82, 10, 10, A.trim);
+  // 吊灯
+  R2(392, 0, 2, 12, '#2b3a56');
+  R2(384, 12, 18, 4, '#3d5373');
+  R2(386, 16, 14, 3, '#ffe6b8');
+  c2.globalAlpha = 0.12;
+  R2(376, 19, 34, 40, '#ffe6b8');
+  c2.globalAlpha = 1;
+
+  // 店长（站在柜台后）
+  const kx = 420, ky = 48;
+  R2(kx - 12, ky + 26, 24, 34, '#1b2740');
+  R2(kx - 12, ky + 26, 24, 3, A.trim);
+  R2(kx - 12, ky + 40, 24, 2, '#0f1728');
+  R2(kx - 8, ky + 6, 16, 20, '#d8a98a');
+  R2(kx - 9, ky + 3, 18, 7, '#151b2a');
+  R2(kx - 9, ky + 9, 4, 12, '#151b2a');
+  R2(kx + 5, ky + 9, 4, 12, '#151b2a');
+  R2(kx - 5, ky + 14, 3, 3, '#0c1220');
+  R2(kx + 3, ky + 14, 3, 3, '#0c1220');
+  R2(kx - 4, ky + 20, 8, 2, '#8a5a4a');
+  R2(kx + 12, ky + 28, 7, 18, '#1b2740');
+  R2(kx + 15, ky + 44, 8, 5, '#d8a98a');
+
+  // 墙上招牌
+  R2(322, 20, 148, 18, '#070c16');
+  R2(322, 20, 148, 2, A.trim);
+  c2.font = 'bold 12px "Microsoft YaHei",monospace';
+  c2.textAlign = 'center';
+  c2.fillStyle = A.bg;
+  c2.fillText(A.sign, 396, 34);
+  c2.textAlign = 'left';
+
+  // 地板反光
+  c2.globalAlpha = 0.12;
+  R2(10, 126, 118, 10, '#9fe8ff');
+  R2(318, 126, 156, 8, A.trim);
+  c2.globalAlpha = 1;
+}
+
+/* ==== 16-inside.js ==== */
+'use strict';
+/* =========================================================================
+   16 inside — 店铺室内场景：可以走动、可以逛货架、柜台开面板买东西
+   ========================================================================= */
+
+const ROOM_FY = 300;
+
+/* 颜色明暗 */
+function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16);
+  let R = (n >> 16) & 255, G = (n >> 8) & 255, B = n & 255;
+  R = Math.round(clamp(R * k, 0, 255));
+  G = Math.round(clamp(G * k, 0, 255));
+  B = Math.round(clamp(B * k, 0, 255));
+  return '#' + ((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1);
+}
+
+/* ---------------- 场景数据 ---------------- */
+function buildInside(shopId) {
+  const list = (typeof SHOPS !== 'undefined') ? SHOPS : [];
+  const shop = list.find(s => s.id === shopId) || list[0];
+  const n = shop.items.length;
+  const W = Math.max(860, 340 + n * 112 + 420);
+  const FY = ROOM_FY;
+
+  const plats = [
+    { x: 0, y: FY, w: W, h: 60, floor: true },
+    { x: -70, y: 0, w: 70, h: 380, wall: true },
+    { x: W, y: 0, w: 70, h: 380, wall: true }
+  ];
+
+  const spots = [];
+  const stands = [];
+  for (let i = 0; i < n; i++) {
+    const sx = 470 + i * 112;
+    stands.push({ x: sx, y: FY, item: shop.items[i], i });
+    spots.push({ kind: 'buyStand', x: sx, y: FY, r: 44, label: shop.items[i].name, price: shop.items[i].price, i });
+  }
+
+  const cx = W - 250;
+  spots.push({ kind: 'buyDesk', x: cx - 28, y: FY, r: 50, label: '柜台 · 选购' });
+  spots.push({ kind: 'leave', x: 88, y: FY, r: 48, label: '出门 · 回岛上' });
+
+  return {
+    id: 'inside', kind: 'inside', bg: 'inside', pal: PAL.spawn,
+    title: shop.name + ' · 店内', shopId,
+    shopName: shop.name, keeper: shop.keeper,
+    platforms: plats, spots, buildings: [], decos: [], coins: [], beacons: [],
+    stands, counter: { x: cx, y: FY, w: 150, h: 34 },
+    door: { x: 88, y: FY },
+    roomW: W, floors: [],
+    b: { x0: 0, x1: W, y0: 0, y1: 0 },
+    spawn: { x: 168, y: FY - 24 },
+    killY: 999, weather: 'none', portalN: 0
+  };
+}
+
+/* ---------------- 进出店 ---------------- */
+function enterShop(id) {
+  if (!SC || SC.kind === 'inside') return;
+  G.insideBack = {
+    scene: SC.kind, world: G.world, chal: G.chal,
+    x: P.x, y: P.y
+  };
+  gotoScene('inside', id);
+}
+
+function exitShop() {
+  const b = G.insideBack;
+  G.insideBack = null;
+  if (!b) { gotoScene('spawn'); return; }
+  SFX.door();
+  loadScene(b.scene, b.world, b.chal);
+  P.x = b.x; P.y = b.y; P.vx = 0; P.vy = 0;
+  CAM.x = clamp(P.x - VIEW.w * 0.35, SC.b.x0, SC.b.x1 - VIEW.w);
+  CAM.y = clamp(P.y - VIEW.h * 0.55, SC.b.y0, SC.b.y1);
+  G.fade = 1;
+  scanInteract();
+}
+
+/* ---------------- 绘制：房间外壳 ---------------- */
+function drawRoomShell(sc, A, W, t) {
+  const FY = ROOM_FY;
+
+  // 后墙
+  r(0, 0, W, FY, shade(A.body, 0.95));
+  let g = ctx.createLinearGradient(0, 0, 0, FY);
+  g.addColorStop(0, 'rgba(0,0,0,.42)');
+  g.addColorStop(.42, 'rgba(0,0,0,.06)');
+  g.addColorStop(1, 'rgba(0,0,0,.34)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, FY);
+  // 墙板竖缝
+  for (let x = 0; x < W; x += 72) rl(x, 0, 1, FY, '#000000', 0.12);
+
+  // 天花板
+  r(0, 0, W, 46, '#080e18');
+  r(0, 44, W, 3, '#22304a');
+  r(0, 20, W, 5, '#16223a');
+  rl(0, 20, W, 1, '#33456a', 0.6);
+
+  // 吊灯
+  for (let x = 150; x < W - 60; x += 236) {
+    r(x - 1, 46, 2, 22, '#2b3a56');
+    r(x - 15, 68, 30, 4, '#3d5373');
+    r(x - 14, 72, 28, 4, '#ffe6b8');
+    rl(x - 20, 70, 40, 10, '#ffe6b8', 0.18);
+    const cw = 168;
+    const lg = ctx.createLinearGradient(0, 76, 0, ROOM_FY);
+    lg.addColorStop(0, 'rgba(255,230,184,.13)');
+    lg.addColorStop(0.5, 'rgba(255,230,184,.05)');
+    lg.addColorStop(1, 'rgba(255,230,184,0)');
+    ctx.fillStyle = lg;
+    ctx.beginPath();
+    ctx.moveTo(x - 12, 76);
+    ctx.lineTo(x + 12, 76);
+    ctx.lineTo(x + cw / 2, ROOM_FY);
+    ctx.lineTo(x - cw / 2, ROOM_FY);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // 护墙板
+  r(0, FY - 74, W, 74, shade(A.body, 0.7));
+  r(0, FY - 74, W, 2, shade(A.trim, 0.65));
+  r(0, FY - 73, W, 1, '#000000');
+  for (let x = 0; x < W; x += 36) rl(x, FY - 74, 1, 74, '#000000', 0.22);
+
+  // 地板
+  r(0, FY, W, 62, '#0d1420');
+  r(0, FY, W, 3, shade(A.body, 1.5));
+  r(0, FY + 3, W, 1, '#000000');
+  for (let x = 0; x < W; x += 48) rl(x, FY + 3, 2, 58, '#000000', 0.32);
+  for (let i = 0; i < 3; i++) rl(0, FY + 14 + i * 16, W, 1, '#000000', 0.2);
+  rl(0, FY + 4, W, 12, A.trim, 0.045);
+
+  // 霓虹招牌
+  const sx = Math.round(W / 2);
+  r(sx - 96, 54, 192, 30, '#060b14');
+  r(sx - 96, 54, 192, 2, A.trim);
+  r(sx - 96, 82, 192, 2, A.trim);
+  rl(sx - 92, 56, 184, 26, A.trim, 0.08);
+  signText(A.sign, sx, 69, A.trim, 13, true);
+
+  // 橱窗（街道）
+  const wx = 176, wy = 116, ww = 116, wh = 86;
+  r(wx - 5, wy - 5, ww + 10, wh + 10, '#080e18');
+  r(wx - 2, wy - 2, ww + 4, wh + 4, '#33456a');
+  r(wx, wy, ww, wh, '#08182a');
+  const wr = mulberry32(91);
+  // 街上霓虹
+  for (let i = 0; i < 9; i++) {
+    const cols = ['#22e0ff', '#ff3ea5', '#ffcf4d', '#5dff9b', '#7a4bff'];
+    const cc = cols[Math.floor(wr() * 5)];
+    const bx = wx + 6 + wr() * (ww - 22);
+    const by = wy + 10 + wr() * (wh - 30);
+    rl(bx, by, 6 + wr() * 12, 3, cc, 0.55 + wr() * 0.35);
+  }
+  // 楼影
+  for (let i = 0; i < 3; i++) {
+    const bx = wx + 10 + i * 36;
+    r(bx, wy + 40, 26, wh - 40, '#040c16');
+    for (let k = 0; k < 4; k++) rl(bx + 4, wy + 48 + k * 14, 18, 2, '#ffcf4d', 0.18);
+  }
+  // 雨丝
+  for (let i = 0; i < 18; i++) {
+    const rx2 = wx + wr() * ww, ry2 = wy + wr() * wh;
+    rl(rx2, ry2, 1, 6, '#9fd0ff', 0.2);
+  }
+  r(wx + ww / 2 - 1, wy, 2, wh, '#33456a');
+  r(wx, wy + 52, ww, 2, '#33456a');
+  rl(wx + 4, wy + 4, 14, wh - 8, '#ffffff', 0.05);
+
+  // 门洞（外面是街道）
+  const dx = sc.door.x;
+  r(dx - 36, FY - 104, 72, 104, '#0a1220');
+  r(dx - 34, FY - 102, 68, 2, '#33456a');
+  r(dx - 30, FY - 96, 60, 96, '#0a1c2e');
+  // 门外霓虹 + 雨
+  const dr = mulberry32(37);
+  for (let i = 0; i < 8; i++) {
+    const cc = ['#22e0ff', '#ff3ea5', '#ffcf4d', '#5dff9b'][i % 4];
+    rl(dx - 26 + dr() * 48, FY - 88 + dr() * 60, 5 + dr() * 8, 3, cc, 0.5);
+    rl(dx - 24 + dr() * 50, FY - 90 + dr() * 80, 1, 7, '#9fd0ff', 0.16);
+  }
+  // 外面地光
+  rl(dx - 30, FY - 17, 60, 17, '#22e0ff', 0.10);
+  r(dx - 30, FY - 96, 2, 96, '#22304a');
+  r(dx + 28, FY - 96, 2, 96, '#22304a');
+  // 出口牌
+  r(dx - 28, FY - 122, 56, 15, '#04160e');
+  rl(dx - 28, FY - 122, 56, 1, '#5dff9b', 0.8);
+  signText('出 口', dx, FY - 115, '#5dff9b', 8, false);
+  // 地垫
+  r(dx - 32, FY - 5, 64, 5, '#1b2740');
+
+  // 每家店的专属陈设（300~440 那一段墙面/地面）
+  drawAccent(sc, A, W, t);
+
+  // 墙上的货架（展台正上方）
+  const shx = 464, shy = 138, len = Math.max(120, W - 300 - shx);
+  for (let row = 0; row < 2; row++) {
+    const sy = shy + row * 62;
+    rl(shx, sy + 4, len, 6, '#000000', 0.35);
+    r(shx, sy, len, 4, '#33456a');
+    r(shx, sy + 4, len, 2, '#0a0f19');
+    const rng = mulberry32(1200 + row * 31 + (sc.shopId || '').length * 7);
+    for (let x = shx + 8; x < shx + len - 14; x += 18) {
+      const hh = 11 + rng() * 14;
+      const cols = ['#ff3ea5', '#22e0ff', '#ffcf4d', '#5dff9b', '#7a4bff', '#ff8ad5'];
+      const cc = cols[Math.floor(rng() * 6)];
+      r(x, sy - hh, 12, hh, shade(cc, 0.55));
+      rl(x, sy - hh, 12, 2, cc, 0.8);
+      rl(x, sy - hh + 2, 3, hh - 4, '#ffffff', 0.07);
+    }
+  }
+}
+
+/* ---------------- 每家店的专属陈设（左起 300，宽约 140） ---------------- */
+function drawAccent(sc, A, W, t) {
+  const id = sc.shopId, FY = ROOM_FY, ax = 300;
+
+  if (id === 'ramen') {
+    for (let i = 0; i < 3; i++) {
+      const lx = ax + 20 + i * 44;
+      r(lx - 9, 98, 18, 26, '#c8392b');
+      r(lx - 9, 98, 18, 3, '#ff8a5c');
+      r(lx - 1, 124, 2, 4, '#c8392b');
+      rl(lx - 4, 102, 6, 18, '#000000', 0.18);
+    }
+    r(ax + 2, FY - 46, 136, 10, '#8a5220');
+    r(ax + 2, FY - 46, 136, 2, '#ffcf4d');
+    r(ax + 2, FY - 38, 136, 2, '#5a3418');
+    r(ax + 2, FY - 36, 136, 36, '#4a2a12');
+    for (let x = ax + 8; x < ax + 134; x += 12) rl(x, FY - 36, 1, 36, '#2a1608', 0.85);
+    rl(ax + 2, FY - 35, 136, 3, '#a86a2a', 0.5);
+    r(ax + 2, FY - 3, 132, 3, '#1a0f06');
+    r(ax + 136, FY - 46, 2, 46, '#0a0704');
+    for (let x = ax + 10; x < ax + 130; x += 18) rl(x, FY - 36, 1, 36, '#000000', 0.3);
+    for (let i = 0; i < 3; i++) {
+      const px = ax + 22 + i * 44;
+      rl(px, 128 + Math.sin(t * 1.3 + i) * 3, 3, 26, '#ffffff', 0.10);
+    }
+  } else if (id === 'music') {
+    for (let i = 0; i < 2; i++) {
+      const vx = ax + 34 + i * 62;
+      oval(vx, 172, 26, 26, '#141024');
+      oval(vx, 172, 23, 23, '#221a3e');
+      oval(vx, 172, 8, 8, A.trim);
+      oval(vx, 172, 2, 2, '#0a0812');
+    }
+    r(ax + 2, FY - 70, 136, 6, '#1b2740');
+    for (let i = 0; i < 7; i++) {
+      r(ax + 8 + i * 18, FY - 92, 13, 22, ['#7a4bff', '#22e0ff', '#ff3ea5', '#ffcf4d'][i % 4]);
+    }
+  } else if (id === 'cloth') {
+    for (let i = 0; i < 2; i++) {
+      const mx = ax + 34 + i * 66;
+      r(mx - 8, FY - 66, 16, 12, '#d8a98a');
+      r(mx - 11, FY - 54, 22, 30, i ? '#ff8ad5' : '#22e0ff');
+      rl(mx - 11, FY - 54, 5, 30, '#ffffff', 0.07);
+      r(mx - 9, FY - 24, 7, 24, '#2b3a56');
+      r(mx + 2, FY - 24, 7, 24, '#2b3a56');
+      r(mx - 18, FY - 57, 36, 3, '#4a6088');
+      r(mx - 11, FY - 2, 22, 3, '#0a1220');
+    }
+  } else if (id === 'flower') {
+    for (let i = 0; i < 2; i++) {
+      const fx = ax + 36 + i * 62;
+      r(fx - 14, FY - 26, 28, 26, '#1b3a2c');
+      r(fx - 14, FY - 26, 28, 3, '#5dff9b');
+      r(fx - 14, FY - 26, 3, 26, '#2b5a42');
+      for (let k = 0; k < 5; k++) {
+        const cxx = fx - 9 + k * 5;
+        r(cxx, FY - 44 - (k % 2) * 8, 5, 5, k % 2 ? '#ff8ad5' : '#ffcf4d');
+        rl(cxx + 2, FY - 41, 1, 16, '#5dff9b', 0.45);
+      }
+    }
+    r(ax + 4, FY - 66, 132, 4, '#33456a');
+    for (let i = 0; i < 6; i++) r(ax + 10 + i * 21, FY - 62, 12, 8, '#2f7a4f');
+  } else if (id === 'arcade') {
+    const axc = ax + 40;
+    r(axc - 26, FY - 66, 52, 66, '#141a2c');
+    r(axc - 26, FY - 66, 52, 4, A.trim);
+    r(axc - 21, FY - 60, 42, 28, '#0a1020');
+    rl(axc - 20, FY - 59, 40, 26, '#ff3ea5', 0.22 + 0.12 * Math.sin(t * 4));
+    r(axc - 18, FY - 32, 36, 7, '#1c2438');
+    r(axc - 15, FY - 30, 4, 4, '#ff3ea5');
+    r(axc - 7, FY - 30, 4, 4, '#22e0ff');
+    r(axc + 1, FY - 30, 4, 4, '#ffcf4d');
+    r(axc - 22, FY - 20, 44, 20, '#0e1420');
+    rl(axc - 22, FY - 20, 44, 2, A.trim, 0.5);
+  } else if (id === 'bank') {
+    const vx = ax + 70;
+    oval(vx, FY - 96, 46, 46, '#0d1a16');
+    oval(vx, FY - 96, 41, 41, '#16342a');
+    oval(vx, FY - 96, 34, 34, '#0a1c18');
+    r(vx - 5, FY - 101, 10, 10, A.trim);
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4;
+      r(vx + Math.cos(a) * 31 - 1, FY - 96 + Math.sin(a) * 31 - 1, 3, 3, A.trim);
+    }
+    r(ax + 4, FY - 74, 44, 30, '#0b1a16');
+    r(ax + 4, FY - 74, 44, 2, A.trim);
+    rl(ax + 8, FY - 70, 36, 22, '#5dff9b', 0.12);
+  } else if (id === 'cyber') {
+    r(ax + 24, 128, 6, 64, A.trim);
+    r(ax + 1, 152, 52, 6, A.trim);
+    rl(ax - 8, 120, 70, 80, A.trim, 0.06);
+    r(ax + 84, FY - 92, 46, 92, '#0c1420');
+    r(ax + 84, FY - 92, 46, 2, A.trim);
+    for (let i = 0; i < 2; i++) {
+      r(ax + 92, FY - 82 + i * 34, 30, 22, '#101a2b');
+      r(ax + 98, FY - 76 + i * 34, 18, 8, '#d8a98a');
+      r(ax + 100, FY - 66 + i * 34, 14, 10, '#c0c8d8');
+    }
+    rl(ax + 86, FY - 90, 42, 88, A.trim, 0.05);
+  } else if (id === 'cafe') {
+    for (let i = 0; i < 2; i++) {
+      const cx2 = ax + 34 + i * 70;
+      r(cx2 - 22, FY - 60, 44, 60, '#2e1d0a');
+      r(cx2 - 22, FY - 60, 44, 3, '#ffb347');
+      r(cx2 - 14, FY - 50, 28, 14, '#3a2410');
+      r(cx2 - 10, FY - 46, 20, 6, '#5a3a14');
+      r(cx2 - 16, FY - 26, 32, 20, '#241708');
+      rl(cx2 - 6, FY - 74, 4, 14, '#ffffff', 0.10);
+    }
+    r(ax + 4, FY - 78, 132, 4, '#33456a');
+    for (let i = 0; i < 7; i++) {
+      r(ax + 10 + i * 18, FY - 92, 12, 14, i % 2 ? '#ffb347' : '#5a3a14');
+      rl(ax + 10 + i * 18, FY - 92, 12, 1, '#ffe6b8', 0.4);
+    }
+  } else if (id === 'tool') {
+    r(ax + 2, 122, 136, 66, '#0c1420');
+    r(ax + 2, 122, 136, 2, '#33456a');
+    for (let i = 0; i < 8; i++) {
+      const tx = ax + 14 + (i % 4) * 32;
+      const ty = 132 + Math.floor(i / 4) * 30;
+      r(tx, ty, 4, 22, '#8a94a8');
+      r(tx - 4, ty, 12, 5, '#c0c8d8');
+      r(tx - 1, ty + 20, 6, 6, A.trim);
+    }
+    r(ax + 2, FY - 54, 136, 54, '#141a2c');
+    r(ax + 2, FY - 54, 136, 3, A.trim);
+    for (let i = 0; i < 3; i++) {
+      r(ax + 10 + i * 44, FY - 40, 36, 6, '#1c2438');
+      r(ax + 14 + i * 44, FY - 52, 6, 12, '#c0c8d8');
+      r(ax + 24 + i * 44, FY - 50, 12, 10, '#8a94a8');
+    }
+  } else {
+    // 便利店：冷柜
+    r(ax + 4, FY - 82, 132, 82, '#0b1a26');
+    r(ax + 4, FY - 82, 132, 3, A.trim);
+    r(ax + 4, FY - 82, 3, 82, '#22304a');
+    r(ax + 133, FY - 82, 3, 82, '#22304a');
+    r(ax + 4, FY - 3, 132, 3, '#16223a');
+    rl(ax + 7, FY - 79, 126, 76, '#22e0ff', 0.07);
+    for (let i = 0; i < 3; i++) rl(ax + 8, FY - 56 + i * 26, 124, 1, '#33456a', 0.9);
+    for (let i = 0; i < 18; i++) {
+      const bx = ax + 12 + (i % 9) * 14;
+      const by = FY - 76 + Math.floor(i / 9) * 26;
+      r(bx, by, 10, 14, i % 2 ? '#22e0ff' : '#ff3ea5');
+      rl(bx, by, 10, 1, '#ffffff', 0.35);
+      rl(bx, by + 2, 10, 12, '#000000', 0.12);
+    }
+    rl(ax + 8, FY - 78, 124, 74, '#22e0ff', 0.05);
+  }
+}
+
+/* 室内专用：高分辨率角色（比街上的 12×18 精灵细节多，和店长同比例） */
+function drawPlayerBig(p, t) {
+  const [coat, trim] = COATS[G.up.coat % COATS.length];
+  const cx = Math.round(p.x + p.w / 2);
+  const fy = Math.round(p.y + p.h);
+  const run = p.state === 'run';
+  const air = !p.onGround;
+  const f = p.face;
+  const ph = p.anim || 0;
+  const swing = run ? Math.sin(ph * 9) : 0;
+  const bob = run ? Math.abs(Math.sin(ph * 9)) * 1.5 : 0;
+  const y0 = fy - bob;
+
+  // 影子
+  oval(cx, fy + 1, 15, 4, '#00000066');
+
+  // 腿 + 靴子
+  const legY = y0 - 17;
+  r(cx - 9 + Math.round(swing * 2), legY, 8, 17, '#1a2438');
+  r(cx + 1 - Math.round(swing * 2), legY, 8, 17, '#16202f');
+  const b1 = cx - 10 + Math.round(swing * 2), b2 = cx + 1 - Math.round(swing * 2);
+  r(b1, y0 - 5, 10, 5, '#0c1420');
+  r(b2, y0 - 5, 10, 5, '#0c1420');
+  rl(b1, y0 - 5, 10, 1, trim, 0.45);
+  rl(b2, y0 - 5, 10, 1, trim, 0.45);
+
+  // 外套
+  const bodyY = y0 - 40;
+  r(cx - 13, bodyY, 26, 25, coat);
+  r(cx - 13, bodyY, 26, 3, trim);
+  rl(cx - 13, bodyY + 3, 26, 1, '#000000', 0.35);
+  r(cx - 1, bodyY + 4, 2, 16, '#0d1420');
+  rl(cx - 1, bodyY + 4, 2, 16, trim, 0.55);
+  r(cx - 13, bodyY + 21, 26, 4, shade(coat, 0.68));
+  rl(cx - 13, bodyY + 2, 26, 1, '#ffffff', 0.08);
+
+  // 手臂
+  r(cx - 17, bodyY + 6, 5, 15, shade(coat, 0.82));
+  r(cx + 12, bodyY + 6, 5, 15, shade(coat, 0.82));
+  r(cx - 17, bodyY + 20, 5, 4, '#d8a98a');
+  r(cx + 12, bodyY + 20, 5, 4, '#d8a98a');
+
+  // 头
+  const hy = bodyY - 19;
+  r(cx - 8, hy, 16, 17, '#d8a98a');
+  r(cx - 9, hy - 4, 18, 7, '#151b2a');
+  r(cx - 9, hy + 1, 3, 9, '#151b2a');
+  r(cx + 6, hy + 1, 3, 9, '#151b2a');
+  rl(cx - 8, hy + 1, 16, 1, '#000000', 0.15);
+  // 眼睛（护目镜）
+  const ex = cx + (f > 0 ? 0 : -6);
+  r(ex, hy + 6, 7, 3, '#0c1420');
+  r(ex + 1, hy + 6, 5, 2, trim);
+  r(ex + 2, hy + 6, 2, 2, '#ffffff80');
+  // 嘴
+  r(cx - 2 + (f > 0 ? 2 : -4), hy + 12, 4, 1, '#8a5a4a');
+  // 空中：披风飘起来
+  if (air) {
+    r(cx - f * 15, bodyY + 4, 6, 14, shade(coat, 0.6));
+  }
+}
+function drawKeeper(x, fy, A) {
+  // 总高约 58，柜台(26) 以上露出头+胸
+  r(x - 12, fy - 44, 24, 38, shade(A.body, 1.45));
+  r(x - 12, fy - 44, 24, 3, A.trim);
+  r(x - 16, fy - 38, 4, 14, shade(A.body, 1.45));
+  r(x + 12, fy - 38, 4, 14, shade(A.body, 1.45));
+  r(x - 8, fy - 58, 16, 16, '#d8a98a');
+  r(x - 9, fy - 61, 18, 7, '#151b2a');
+  r(x - 9, fy - 56, 3, 11, '#151b2a');
+  r(x + 6, fy - 56, 3, 11, '#151b2a');
+  r(x - 5, fy - 51, 3, 3, '#0c1220');
+  r(x + 2, fy - 51, 3, 3, '#0c1220');
+  r(x - 4, fy - 45, 8, 2, '#8a5a4a');
+}
+
+function drawStand(s, A, t) {
+  const x = s.x, y = s.y;
+  const it = s.item;
+  const own = (G.owned && G.owned[it.id]) || 0;
+  const maxed = own >= it.max;
+  const cols = ['#ffcf4d', '#22e0ff', '#ff3ea5'];
+  const cc = cols[s.i % 3];
+
+  // 光柱
+  if (!maxed) {
+    for (let i = 0; i < 6; i++) {
+      const w2 = 22 - i * 3;
+      rl(x - w2 / 2, y - 38 - i * 10, w2, 10, cc, 0.05 + 0.01 * Math.sin(t * 2 + s.i));
+    }
+  }
+  // 底座
+  rl(x - 15, y - 3, 30, 4, '#000000', 0.4);
+  r(x - 13, y - 26, 26, 26, '#1b2740');
+  r(x - 13, y - 26, 26, 3, shade(A.trim, 0.85));
+  r(x - 10, y - 23, 20, 20, '#101a2b');
+  r(x - 10, y - 23, 20, 1, '#0a1220');
+  // 商品
+  r(x - 8, y - 42, 16, 16, maxed ? '#3a4356' : cc);
+  rl(x - 8, y - 42, 16, 3, '#ffffff', 0.35);
+  r(x - 4, y - 37, 8, 7, '#0b111c');
+  rl(x - 4, y - 37, 8, 1, cc, 0.6);
+
+  // 标签（放高一点，免得被角色脑袋挡住）
+  signText(it.name, x, y - 70, maxed ? '#6b7788' : '#e6f0ff', 8, true);
+  signText(maxed ? '已拥有' : '◎ ' + it.price, x, y - 81, maxed ? '#5d6a7d' : '#ffcf4d', 7, true);
+}
+
+function drawRoomProps(sc, A, t) {
+  const FY = ROOM_FY;
+
+  // 地毯
+  oval(sc.counter.x - 150, FY + 26, 120, 12, '#111c31');
+  oval(sc.counter.x - 150, FY + 26, 108, 8, '#16274180');
+  rl(sc.counter.x - 256, FY + 18, 212, 2, A.trim, 0.12);
+
+  // 店长 + 柜台
+  const c = sc.counter;
+  drawKeeper(c.x + c.w - 44, FY - 4, A);
+  r(c.x, FY - 26, c.w, 26, '#101a2b');
+  r(c.x, FY - 26, c.w, 4, shade(A.trim, 1.0));
+  r(c.x, FY - 22, c.w, 2, '#000000');
+  r(c.x + 4, FY - 18, c.w - 8, 6, '#16223a');
+  for (let x = c.x + 8; x < c.x + c.w - 8; x += 14) rl(x, FY - 18, 1, 18, '#000000', 0.3);
+  r(c.x - 2, FY - 4, c.w + 4, 4, '#0a1220');
+  rl(c.x - 2, FY - 4, c.w + 4, 1, A.trim, 0.4);
+  // 收银机
+  r(c.x + 8, FY - 40, 22, 14, '#1c2438');
+  r(c.x + 11, FY - 37, 16, 8, '#2ad0ff');
+  rl(c.x + 11, FY - 37, 16, 8, '#ffffff', 0.15);
+  r(c.x + 8, FY - 26, 22, 2, '#0d1420');
+  // 柜台上的小灯
+  r(c.x + 56, FY - 32, 8, 6, '#2b3a56');
+  r(c.x + 57, FY - 29, 6, 3, '#ffe6b8');
+  rl(c.x + 52, FY - 36, 16, 14, '#ffe6b8', 0.12);
+
+  for (const s of sc.stands) drawStand(s, A, t);
+
+  // 门边绿植
+  const px = sc.door.x + 60;
+  r(px - 7, FY - 14, 14, 14, '#123026');
+  r(px - 7, FY - 14, 14, 2, '#5dff9b');
+  for (let i = 0; i < 6; i++) {
+    r(px - 7 + (i % 3) * 5, FY - 28 - Math.floor(i / 3) * 8, 5, 9, '#2f7a4f');
+  }
+}
+
+/* ---------------- 店内特殊陈设：货架 / 餐桌椅 / 机台 / 花桶 … ---------------- */
+const FURN = {
+  store:  [{ k: 'gondola', x: 238 }, { k: 'basket', x: 176 }],
+  ramen:  [{ k: 'table', x: 236 }, { k: 'stool', x: 326 }, { k: 'stool', x: 370 }],
+  cafe:   [{ k: 'rtable', x: 238 }, { k: 'rtable', x: 300 }],
+  arcade: [{ k: 'cab', x: 152 }, { k: 'cab', x: 240 }],
+  music:  [{ k: 'crate', x: 214 }, { k: 'crate', x: 292 }],
+  cloth:  [{ k: 'rack', x: 226 }, { k: 'mirror', x: 300 }],
+  flower: [{ k: 'bucket', x: 220 }, { k: 'bucket', x: 288 }],
+  tool:   [{ k: 'bench', x: 246 }, { k: 'crate', x: 152 }],
+  bank:   [{ k: 'atm', x: 238 }, { k: 'barrier', x: 150 }],
+  cyber:  [{ k: 'gurney', x: 240 }, { k: 'crate', x: 152 }]
+};
+
+function drawFurn(sc, A, t) {
+  const FY = ROOM_FY;
+  const list = FURN[sc.shopId] || [];
+  const cols = ['#ff3ea5', '#22e0ff', '#ffcf4d', '#5dff9b', '#7a4bff'];
+
+  for (const f of list) {
+    const x = f.x;
+
+    if (f.k === 'gondola') {
+      // 便利店岛型货架：三层格子 + 满架商品
+      const w = 92, top = FY - 80;
+      rl(x - w / 2 - 5, FY - 3, w + 10, 6, '#000000', 0.3);
+      r(x - w / 2, top, w, 80, '#16233a');
+      r(x - w / 2, top, w, 3, shade(A.trim, 0.85));
+      r(x - w / 2, top, 3, 80, '#22304a');
+      r(x + w / 2 - 3, top, 3, 80, '#22304a');
+      const rg = mulberry32(77);
+      for (let row = 0; row < 3; row++) {
+        const sy = top + 8 + row * 24;
+        r(x - w / 2 + 3, sy + 17, w - 6, 3, '#2b3a56');
+        rl(x - w / 2 + 3, sy + 17, w - 6, 1, '#7f96bd', 0.5);
+        for (let i = 0; i < 7; i++) {
+          const bx = x - w / 2 + 6 + i * 12;
+          const hh = 8 + Math.floor(rg() * 9);
+          const cc = cols[Math.floor(rg() * 5)];
+          r(bx, sy + 17 - hh, 9, hh, shade(cc, 0.62));
+          rl(bx, sy + 17 - hh, 9, 2, cc, 0.9);
+          rl(bx + 1, sy + 17 - hh + 2, 2, hh - 3, '#ffffff', 0.06);
+        }
+      }
+      r(x - 23, top - 12, 46, 11, '#0b1220');
+      r(x - 23, top - 12, 46, 1, A.trim);
+      signText('特 价', x, top - 6, A.trim, 7, false);
+      rl(x - w / 2, top, w, 80, A.trim, 0.04);
+
+    } else if (f.k === 'basket') {
+      // 购物篮（里面还露着东西）
+      r(x - 12, FY - 15, 24, 15, '#1b3a5c');
+      r(x - 12, FY - 15, 24, 2, '#3d6a9c');
+      for (let i = 0; i < 3; i++) rl(x - 8 + i * 7, FY - 13, 1, 12, '#2b4a6c', 0.9);
+      r(x - 6, FY - 21, 5, 7, '#2ad0ff');
+      r(x + 2, FY - 20, 5, 6, '#ffcf4d');
+      r(x - 2, FY - 19, 5, 5, '#ff3ea5');
+
+    } else if (f.k === 'table') {
+      // 拉面店餐桌 + 四把椅子
+      const tw = 64;
+      rl(x - tw / 2 - 12, FY - 3, tw + 24, 6, '#000000', 0.3);
+      for (const cxx of [x - tw / 2 - 9, x + tw / 2 + 9]) {
+        r(cxx - 6, FY - 42, 13, 3, '#8a3a28');
+        rl(cxx - 6, FY - 42, 13, 1, '#c85a3e', 0.85);
+        r(cxx - 6, FY - 39, 2, 21, '#5a2018');
+        r(cxx + 5, FY - 39, 2, 21, '#5a2018');
+      }
+      r(x - tw / 2 + 7, FY - 36, 5, 36, '#5a2418');
+      r(x + tw / 2 - 12, FY - 36, 5, 36, '#5a2418');
+      rl(x - tw / 2 + 7, FY - 36, 2, 36, '#8a4a2a', 0.5);
+      r(x - tw / 2, FY - 44, tw, 9, '#a85e34');
+      r(x - tw / 2, FY - 44, tw, 3, '#ffd8a8');
+      r(x - tw / 2, FY - 37, tw, 2, '#6b2a1e');
+      for (let i = 0; i < 2; i++) {
+        const bx = x - 25 + i * 30;
+        r(bx, FY - 53, 17, 9, '#f4f4f4');
+        r(bx, FY - 53, 17, 2, '#c8392b');
+        rl(bx + 3, FY - 58, 2, 6, '#ffffff', 0.3);
+        rl(bx + 8, FY - 57, 2, 5, '#ffffff', 0.22);
+        rl(bx + 1, FY - 45, 15, 1, '#000000', 0.35);
+      }
+      r(x + 20, FY - 60, 7, 16, '#3a2410');
+      for (let i = 0; i < 3; i++) rl(x + 21 + i * 2, FY - 65, 1, 13, '#ffe6b8', 0.75);
+      r(x - 10, FY - 26, 20, 4, '#8a3a28');
+      r(x - 10, FY - 26, 20, 1, '#c85a3e', 0.9);
+      r(x - 10, FY - 22, 2, 22, '#5a2018');
+      r(x + 8, FY - 22, 2, 22, '#5a2018');
+
+    } else if (f.k === 'stool') {
+      // 吧台圆凳
+      r(x - 8, FY - 27, 16, 4, '#c8392b');
+      r(x - 8, FY - 27, 16, 2, '#ff8a5c');
+      r(x - 1, FY - 23, 3, 21, '#2b3a56');
+      r(x - 8, FY - 3, 16, 3, '#2b3a56');
+
+    } else if (f.k === 'rtable') {
+      // 咖啡站小圆桌 + 两只木凳
+      rl(x - 26, FY - 3, 52, 5, '#000000', 0.25);
+      for (const sx of [x - 30, x + 22]) {
+        r(sx, FY - 23, 12, 3, '#8a5a2a');
+        r(sx + 5, FY - 20, 3, 20, '#5a3a14');
+      }
+      r(x - 2, FY - 33, 4, 33, '#2b3a56');
+      r(x - 9, FY - 3, 18, 3, '#3d5373');
+      oval(x, FY - 36, 22, 6, '#a8763c');
+      oval(x, FY - 38, 22, 5, '#e8b070');
+      oval(x, FY - 38, 19, 4, '#f2c68e');
+      r(x - 4, FY - 47, 9, 8, '#f2f2f2');
+      r(x - 3, FY - 46, 7, 3, '#5a3a14');
+      rl(x + 5, FY - 45, 2, 4, '#ffffff', 0.4);
+      for (let i = 0; i < 2; i++) rl(x - 2 + i * 4, FY - 58 + Math.sin(t * 2 + i) * 2, 1, 8, '#ffffff', 0.13);
+
+    } else if (f.k === 'cab') {
+      // 街机机台
+      const cw2 = 50, ch2 = 74;
+      rl(x - cw2 / 2 - 3, FY - 3, cw2 + 6, 6, '#000000', 0.3);
+      r(x - cw2 / 2, FY - ch2, cw2, ch2, '#141a2c');
+      r(x - cw2 / 2, FY - ch2, cw2, 4, A.trim);
+      r(x - cw2 / 2 + 4, FY - ch2 + 8, cw2 - 8, 30, '#0a1020');
+      rl(x - cw2 / 2 + 5, FY - ch2 + 9, cw2 - 10, 28, '#ff3ea5', 0.16 + 0.1 * Math.sin(t * 5 + x));
+      for (let i = 0; i < 3; i++) rl(x - cw2 / 2 + 7 + i * 13, FY - ch2 + 15 + (i % 2) * 9, 9, 8, '#22e0ff', 0.5);
+      r(x - cw2 / 2 + 2, FY - ch2 + 42, cw2 - 4, 8, '#1c2438');
+      r(x - cw2 / 2 + 6, FY - ch2 + 44, 4, 4, '#ff3ea5');
+      r(x - cw2 / 2 + 14, FY - ch2 + 44, 4, 4, '#22e0ff');
+      r(x - cw2 / 2 + 22, FY - ch2 + 44, 4, 4, '#ffcf4d');
+      r(x - cw2 / 2 + 2, FY - 18, cw2 - 4, 18, '#0e1420');
+      rl(x - cw2 / 2 + 2, FY - 18, cw2 - 4, 2, A.trim, 0.6);
+
+    } else if (f.k === 'crate') {
+      // 木箱 / 纸箱堆
+      for (let i = 0; i < 3; i++) {
+        const cxx = x - 22 + (i === 1 ? 26 : 0) + (i === 2 ? 6 : 0);
+        const cy2 = FY - 20 - (i === 2 ? 20 : 0);
+        r(cxx, cy2, 26, 20, i % 2 ? '#3a2a18' : '#2b2233');
+        r(cxx, cy2, 26, 2, i % 2 ? '#6b5236' : '#4a3d5c');
+        rl(cxx + 3, cy2 + 7, 20, 1, '#000000', 0.35);
+        rl(cxx + 3, cy2 + 13, 20, 1, '#000000', 0.35);
+        rl(cxx + 5, cy2 + 4, 9, 3, '#ffe6b8', 0.16);
+      }
+
+    } else if (f.k === 'rack') {
+      // 挂衣架
+      rl(x - 27, FY - 3, 54, 4, '#000000', 0.25);
+      r(x - 26, FY - 62, 3, 62, '#4a6088');
+      r(x + 23, FY - 62, 3, 62, '#4a6088');
+      r(x - 26, FY - 62, 52, 3, '#5a7099');
+      for (let i = 0; i < 4; i++) {
+        const hx = x - 21 + i * 13;
+        rl(hx + 4, FY - 59, 1, 10, '#c0c8d8', 0.85);
+        r(hx, FY - 49, 11, 30, cols[i % 4]);
+        rl(hx, FY - 49, 11, 3, '#ffffff', 0.18);
+        rl(hx + 2, FY - 45, 2, 24, '#000000', 0.12);
+      }
+
+    } else if (f.k === 'mirror') {
+      // 试衣镜
+      r(x - 17, FY - 86, 34, 86, '#2b3a56');
+      r(x - 14, FY - 83, 28, 79, '#0d2030');
+      const mg = ctx.createLinearGradient(x - 14, FY - 83, x + 14, FY - 4);
+      mg.addColorStop(0, 'rgba(180,240,255,.30)');
+      mg.addColorStop(.5, 'rgba(110,170,210,.12)');
+      mg.addColorStop(1, 'rgba(180,240,255,.22)');
+      ctx.fillStyle = mg;
+      ctx.fillRect(x - 14, FY - 83, 28, 79);
+      rl(x - 11, FY - 78, 4, 32, '#ffffff', 0.16);
+      r(x - 17, FY - 3, 34, 3, '#3d5373');
+
+    } else if (f.k === 'bucket') {
+      // 花桶
+      for (let i = 0; i < 2; i++) {
+        const bx = x + i * 22 - 11;
+        r(bx - 11, FY - 30, 22, 30, i ? '#1b3a2c' : '#243a1b');
+        r(bx - 11, FY - 30, 22, 3, '#5dff9b');
+        r(bx - 11, FY - 30, 3, 30, '#2b5a42');
+        for (let k = 0; k < 4; k++) {
+          const fx2 = bx - 8 + k * 5;
+          r(fx2, FY - 46 - (k % 2) * 7, 5, 5, k % 2 ? '#ff8ad5' : '#ffcf4d');
+          rl(fx2 + 2, FY - 42, 1, 13, '#5dff9b', 0.4);
+        }
+      }
+
+    } else if (f.k === 'bench') {
+      // 五金铺工作台
+      rl(x - 42, FY - 3, 84, 5, '#000000', 0.3);
+      r(x - 42, FY - 34, 84, 5, '#6b5236');
+      r(x - 42, FY - 34, 84, 2, '#8f7346');
+      r(x - 38, FY - 29, 4, 29, '#4a3a22');
+      r(x + 34, FY - 29, 4, 29, '#4a3a22');
+      r(x - 32, FY - 44, 15, 10, '#5a6a80');
+      r(x - 30, FY - 47, 11, 3, '#8a94a8');
+      r(x - 8, FY - 40, 22, 4, '#c0c8d8');
+      r(x + 16, FY - 44, 9, 10, '#8a94a8');
+      r(x - 40, FY - 22, 80, 2, '#3a2a18');
+
+    } else if (f.k === 'atm') {
+      // 芯片兑换自助机
+      r(x - 22, FY - 92, 44, 92, '#101a2b');
+      r(x - 22, FY - 92, 44, 3, A.trim);
+      r(x - 17, FY - 84, 34, 22, '#0a2030');
+      rl(x - 16, FY - 83, 32, 20, '#5dff9b', 0.16 + 0.06 * Math.sin(t * 3));
+      r(x - 12, FY - 80, 24, 4, '#5dff9b');
+      r(x - 12, FY - 72, 16, 3, '#2f7a4f');
+      r(x - 14, FY - 54, 28, 6, '#1c2438');
+      r(x - 14, FY - 46, 28, 4, '#16223a');
+      for (let i = 0; i < 4; i++) r(x - 12 + i * 7, FY - 38, 5, 5, '#ffcf4d');
+      r(x - 20, FY - 4, 40, 4, '#0a1220');
+
+    } else if (f.k === 'barrier') {
+      // 排队栏杆
+      for (let i = 0; i < 3; i++) {
+        const px2 = x + i * 26;
+        r(px2 - 2, FY - 34, 4, 34, '#8a94a8');
+        r(px2 - 5, FY - 34, 10, 3, '#c0c8d8');
+        r(px2 - 6, FY - 3, 12, 3, '#5a6a80');
+      }
+      for (let i = 0; i < 2; i++) {
+        const px2 = x + i * 26;
+        rl(px2 + 5, FY - 24, 18, 2, '#ff3ea5', 0.55);
+        rl(px2 + 5, FY - 21, 18, 1, '#000000', 0.4);
+      }
+
+    } else if (f.k === 'gurney') {
+      // 义体诊所手术床
+      r(x - 34, FY - 26, 68, 5, '#3d5373');
+      r(x - 34, FY - 21, 68, 3, '#16223a');
+      for (const lx of [x - 30, x + 26]) {
+        r(lx, FY - 18, 3, 18, '#5a7099');
+        r(lx - 4, FY - 2, 10, 2, '#0a1220');
+      }
+      r(x - 36, FY - 34, 72, 8, '#c8d4e8');
+      r(x - 36, FY - 34, 72, 2, '#eef4ff');
+      r(x - 30, FY - 42, 20, 8, '#e8eef8');
+      r(x + 16, FY - 58, 3, 18, '#4a6088');
+      oval(x + 18, FY - 62, 9, 5, '#33456a');
+      rl(x + 12, FY - 64, 12, 4, '#5dff9b', 0.3 + 0.1 * Math.sin(t * 2.5));
+      r(x + 34, FY - 44, 16, 24, '#0c1420');
+      r(x + 36, FY - 40, 12, 10, '#0a2030');
+      rl(x + 37, FY - 36, 10, 1, '#5dff9b', 0.9);
+    }
+  }
+}
+
+/* ---------------- 整体绘制 ---------------- */
+function renderInside(sc, t) {
+  const A = SHOP_ART[sc.shopId] || SHOP_ART.store;
+  const W = sc.roomW;
+  ctx.save();
+  ctx.translate(-Math.round(CAM.x), 0);
+  drawRoomShell(sc, A, W, t);
+  drawFurn(sc, A, t);
+  drawRoomProps(sc, A, t);
+
+  // 灯下的柔光，让角色从暗背景里跳出来
+  const pcx = P.x + P.w / 2, pcy = P.y + P.h / 2;
+  const g2 = ctx.createRadialGradient(pcx, pcy, 8, pcx, pcy, 130);
+  g2.addColorStop(0, 'rgba(190,225,255,.10)');
+  g2.addColorStop(1, 'rgba(190,225,255,0)');
+  ctx.fillStyle = g2;
+  ctx.fillRect(pcx - 130, pcy - 130, 260, 260);
+
+  // 玩家：店内专用大号角色
+  drawPlayerBig(P, t);
+  if (P.dust) for (const d of P.dust) rl(d.x, d.y, 2, 2, '#ffffff', clamp(d.l * 2, 0, 0.6));
+  ctx.restore();
+
+  drawBuffs();
+
+  // 暗角
+  const vg = ctx.createRadialGradient(VIEW.w / 2, VIEW.h / 2, VIEW.h * 0.4, VIEW.w / 2, VIEW.h / 2, VIEW.h * 1.0);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,.28)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+
+  // 转场
+  if (G.fade > 0) {
+    ctx.globalAlpha = G.fade;
+    ctx.fillStyle = '#04060c';
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ==== 20-scenes.js ==== */
+'use strict';
+/* =========================================================================
+   20 scenes — 十家小店、世界群岛、挑战关卡、场景切换
+   ========================================================================= */
+
+const SHOP_W2 = 96;
+
+const SHOPS = [
+  {
+    id: 'store', name: '24H 便利店', keeper: '小七', line: '欢迎光临——夜班就我一个，随便看。',
+    items: [
+      { id: 'drink', name: '能量饮', desc: '60 秒 · 移动速度 +12', price: 40, max: 9, dur: 60, eff: { spd: 1 } },
+      { id: 'batt', name: '备用电池', desc: '60 秒 · 冲刺冷却缩短', price: 60, max: 9, dur: 60, eff: { boots: true } },
+      { id: 'bento', name: '夜宵便当', desc: '60 秒 · 起跳更高', price: 55, max: 9, dur: 60, eff: { jmp: 0.8 } },
+      { id: 'torch', name: '手电筒', desc: '60 秒 · 任务点亮起光柱', price: 50, max: 9, dur: 60, eff: { detect: true } },
+      { id: 'card', name: '会员卡', desc: '60 秒 · 每枚金币多收 1 枚', price: 80, max: 9, dur: 60, eff: { coinBonus: 1 } }
+    ]
+  },
+  {
+    id: 'cyber', name: '义体诊所', keeper: '阿玲', line: '腿不够快？换一副就是了，麻药另算。',
+    items: [
+      { id: 'dj', name: '二段跳义体', desc: '永久 · 空中还能再跳一次', price: 150, max: 1 },
+      { id: 'leg', name: '强化跟腱', desc: '永久 · 起跳高度 +30', price: 70, max: 2 },
+      { id: 'knee', name: '膝关节强化', desc: '90 秒 · 移动速度 +12', price: 65, max: 9, dur: 90, eff: { spd: 1 } },
+      { id: 'amp', name: '肾上腺素', desc: '45 秒 · 冲刺冷却减半', price: 75, max: 9, dur: 45, eff: { boots: true } }
+    ]
+  },
+  {
+    id: 'ramen', name: '樱拉面', keeper: '老板娘', line: '跑累了？先吃碗热的再上路。',
+    items: [
+      { id: 'ramen', name: '赤汤拉面', desc: '60 秒 · 移动速度 +8', price: 35, max: 9, dur: 60, eff: { spd: 0.7 } },
+      { id: 'gyoza', name: '煎饺', desc: '60 秒 · 起跳更高', price: 30, max: 9, dur: 60, eff: { jmp: 0.6 } },
+      { id: 'tea', name: '热茶', desc: '60 秒 · 每枚金币多收 1 枚', price: 25, max: 9, dur: 60, eff: { coinBonus: 1 } },
+      { id: 'bigbowl', name: '大碗加面', desc: '90 秒 · 速度 +12、起跳 +30', price: 70, max: 9, dur: 90, eff: { spd: 1, jmp: 1 } }
+    ]
+  },
+  {
+    id: 'music', name: '唱片行', keeper: 'DJ 阿飞', line: '节奏对了，脚就不累。',
+    items: [
+      { id: 'dash', name: '冲刺靴', desc: '永久 · 按 Shift 向前冲刺', price: 120, max: 1 },
+      { id: 'tape', name: '磁带', desc: '60 秒 · 移动速度 +12', price: 40, max: 9, dur: 60, eff: { spd: 1 } },
+      { id: 'mix', name: '混音台', desc: '90 秒 · 每枚金币多收 1 枚', price: 55, max: 9, dur: 90, eff: { coinBonus: 1 } },
+      { id: 'phones', name: '监听耳机', desc: '90 秒 · 任务点亮起光柱', price: 45, max: 9, dur: 90, eff: { detect: true } }
+    ]
+  },
+  {
+    id: 'cloth', name: '霓裳', keeper: '裁缝', line: '跑酷也要好看，对吧。',
+    items: [
+      { id: 'coat0', name: '青蓝外套', desc: '永久 · 换一个配色', price: 30, max: 1 },
+      { id: 'coat1', name: '落日外套', desc: '永久 · 换一个配色', price: 30, max: 1 },
+      { id: 'coat2', name: '苔绿外套', desc: '永久 · 换一个配色', price: 30, max: 1 },
+      { id: 'scarf', name: '霓虹围巾', desc: '60 秒 · 移动速度 +12', price: 35, max: 9, dur: 60, eff: { spd: 1 } }
+    ]
+  },
+  {
+    id: 'bank', name: '芯片兑换', keeper: '柜员', line: '芯片不收，金币可以。',
+    items: [
+      { id: 'detect', name: '芯片探测器', desc: '永久 · 任务点亮起光柱', price: 200, max: 1 },
+      { id: 'chipbox', name: '芯片包', desc: '120 秒 · 每个任务多 1 枚芯片', price: 120, max: 9, dur: 120, eff: { chipBonus: 1 } },
+      { id: 'vault', name: '保险箱', desc: '120 秒 · 每枚金币多收 1 枚', price: 90, max: 9, dur: 120, eff: { coinBonus: 1 } }
+    ]
+  },
+  {
+    id: 'cafe', name: '咖啡站', keeper: '阿库', line: '双份浓缩，跑一整夜都没问题。',
+    items: [
+      { id: 'coffee', name: '黑咖啡', desc: '60 秒 · 移动速度 +12', price: 25, max: 9, dur: 60, eff: { spd: 1 } },
+      { id: 'espresso', name: '双份浓缩', desc: '60 秒 · 起跳高度 +30', price: 60, max: 9, dur: 60, eff: { jmp: 1 } },
+      { id: 'latte', name: '拿铁', desc: '90 秒 · 速度 +6、起跳 +18', price: 45, max: 9, dur: 90, eff: { spd: 0.5, jmp: 0.6 } },
+      { id: 'bean', name: '咖啡豆', desc: '90 秒 · 每枚金币多收 1 枚', price: 40, max: 9, dur: 90, eff: { coinBonus: 1 } }
+    ]
+  },
+  {
+    id: 'flower', name: '花店', keeper: '小满', line: '买束花吧，跑酷也可以很温柔。',
+    items: [
+      { id: 'clover', name: '幸运草', desc: '永久 · 每枚金币多收 1 枚', price: 60, max: 1 },
+      { id: 'dry', name: '干花外套', desc: '永久 · 换一个配色', price: 30, max: 1 },
+      { id: 'bouquet', name: '花束', desc: '60 秒 · 移动速度 +12', price: 30, max: 9, dur: 60, eff: { spd: 1 } },
+      { id: 'honey', name: '花蜜', desc: '60 秒 · 起跳更高', price: 35, max: 9, dur: 60, eff: { jmp: 0.8 } }
+    ]
+  },
+  {
+    id: 'tool', name: '五金铺', keeper: '老周', line: '底子打好了，跑起来才稳。',
+    items: [
+      { id: 'boots', name: '加固靴', desc: '永久 · 冲刺冷却更短', price: 90, max: 1 },
+      { id: 'grip', name: '防滑鞋底', desc: '永久 · 空中更好控制', price: 45, max: 1 },
+      { id: 'spring', name: '弹簧鞋垫', desc: '60 秒 · 起跳高度 +30', price: 50, max: 9, dur: 60, eff: { jmp: 1 } },
+      { id: 'oil', name: '润滑油', desc: '60 秒 · 移动速度 +12', price: 40, max: 9, dur: 60, eff: { spd: 1 } }
+    ]
+  },
+  {
+    id: 'arcade', name: '街机厅', keeper: '小马', line: '打通一关给你盖章——任务多给芯片。',
+    items: [
+      { id: 'badge', name: '连击徽章', desc: '永久 · 每个任务多 2 枚芯片', price: 80, max: 1 },
+      { id: 'token', name: '游戏币', desc: '60 秒 · 每枚金币多收 1 枚', price: 40, max: 9, dur: 60, eff: { coinBonus: 1 } },
+      { id: 'energy', name: '能量饮料', desc: '60 秒 · 移动速度 +12', price: 35, max: 9, dur: 60, eff: { spd: 1 } },
+      { id: 'combo', name: '连击训练', desc: '120 秒 · 每个任务多 1 枚芯片', price: 60, max: 9, dur: 120, eff: { chipBonus: 1 } }
+    ]
+  }
+];
+
+const SHOP_NAME = {};
+SHOPS.forEach(s => { SHOP_NAME[s.id] = s.name; });
+
+const WORLD_INFO = [
+  { name: '霓虹街区', desc: '灯牌比星星还多' },
+  { name: '雨夜码头', desc: '下不完的雨' },
+  { name: '高层天台', desc: '风很大，别往下看' },
+  { name: '熔炉工厂', desc: '热浪烫脚' },
+  { name: '数据深渊', desc: '底下没有底' }
+];
+
+let SC = null;
+
+function worldName(i) { return '世界 ' + (i + 1) + ' · ' + WORLD_INFO[i].name; }
+
+/* ---------------- 排版工具 ---------------- */
+function packRow(items, gap) {
+  let x = 0;
+  const out = [];
+  for (const it of items) {
+    out.push({ it, cx: x + it.w / 2 });
+    x += it.w + gap;
+  }
+  return { out, total: Math.max(0, x - gap) };
+}
+
+function makeIslandScene(cfg) {
+  const gap = cfg.gap || 24;
+  const packed = packRow(cfg.items, gap);
+  const margin = 130;
+  const W = packed.total + margin * 2;
+  const x0 = 20;
+  const startX = x0 + margin;
+
+  const plats = [{ x: x0, y: 250, w: W, h: 54, island: true }];
+  const spots = [], buildings = [], decos = [], coins = [];
+
+  for (const o of packed.out) {
+    const cx = startX + o.cx;
+    const it = o.it;
+    if (it.t === 'shop') {
+      spots.push({ kind: 'shop', id: it.id, x: cx, y: 250, r: 36, label: SHOP_NAME[it.id] });
+    } else if (it.t === 'bld') {
+      buildings.push({ kind: it.kind, x: cx, y: 250, w: it.w, h: Math.min(it.h, 84), seed: (cx * 7) | 0 });
+    } else if (it.t === 'portal') {
+      spots.push({ kind: it.to, i: it.i, c: it.c, x: cx, y: 250, r: 34, label: it.label, sub: it.sub });
+    }
+  }
+
+  // 自动铺街边小物件（避开门/门面）
+  let k = 0;
+  for (let px = x0 + 60; px < x0 + W - 40; px += 108) {
+    let busy = false;
+    for (const s of spots) if (Math.abs(s.x - px) < 62) busy = true;
+    if (busy) continue;
+    const kinds = ['lamp', 'vend', 'crate', 'plant'];
+    decos.push({ kind: kinds[k % 4], x: px, y: 250 });
+    k++;
+  }
+  // 金币只放在岛两端的空地上，免得压在店面橱窗上
+  coins.push({ x: x0 + 52, y: 224, got: false, ph: 1 });
+  coins.push({ x: x0 + 78, y: 208, got: false, ph: 2 });
+  coins.push({ x: x0 + W - 52, y: 224, got: false, ph: 3 });
+  coins.push({ x: x0 + W - 78, y: 208, got: false, ph: 4 });
+
+  /* ---------------- 上层步道 + 上层建筑 ---------------- */
+  const upY = 150;
+  const upRng = mulberry32(Math.floor(W) * 13 + 5);
+  const upPlan = cfg.upper || ['apart', 'factory', 'apart', 'warehouse'];
+  let ui2 = 0;
+  let tx = x0 + 250;
+  while (tx < x0 + W - 250) {
+    const len = Math.min(210 + upRng() * 170, x0 + W - 210 - tx);
+    if (len < 150) break;
+    // 电梯（代替楼梯：按 E 选楼层）
+    const liftX = tx + 26;
+    spots.push({ kind: 'lift', x: liftX, y: 250, r: 42, label: '电梯', lvl: 0, car: false });
+    spots.push({ kind: 'lift', x: liftX, y: upY, r: 42, label: '电梯', lvl: 1 });
+    // 步道本体（单向：可以从下面跳穿，也可以从上面跳下来）
+    plats.push({ x: tx, y: upY, w: len, h: 16, terrace: true, oneWay: true, lvl: 1 });
+    // 步道上的一栋建筑 / 一家店
+    const item = upPlan[ui2 % upPlan.length];
+    if (item.indexOf('shop:') === 0) {
+      const id = item.slice(5);
+      if (len >= 176) {
+        spots.push({ kind: 'shop', id, x: tx + len / 2, y: upY, r: 38, label: SHOP_NAME[id], lvl: 1 });
+      }
+    } else {
+      const bw = Math.min(item === 'factory' ? 86 : 62, len - 26);
+      buildings.push({
+        kind: item, x: tx + len / 2, y: upY, w: bw,
+        h: item === 'factory' ? 96 : 112, seed: ui2 * 97 + 13, lvl: 1
+      });
+    }
+    // 步道上的路灯
+    decos.push({ kind: 'lamp', x: tx + 16, y: upY, lvl: 1 });
+    decos.push({ kind: 'lamp', x: tx + len - 16, y: upY, lvl: 1 });
+    // 上层金币
+    coins.push({ x: tx + len * 0.28, y: upY - 26, got: false, ph: ui2 });
+    coins.push({ x: tx + len * 0.72, y: upY - 26, got: false, ph: ui2 + 1 });
+    ui2++;
+    tx += len + 96;
+  }
+
+  return {
+    id: cfg.id, kind: cfg.id, pal: cfg.pal, title: cfg.title,
+    floors: [{ y: 250, name: '1F · 街道' }, { y: upY, name: '2F · 阁楼' }],
+    platforms: plats, spots, buildings, decos, coins, beacons: [],
+    b: { x0: 0, x1: x0 + W + 40, y0: 0, y1: 120 },
+    spawn: { x: x0 + 70, y: 220 },
+    killY: 430, weather: cfg.weather || 'none', bg: 'islands',
+    portalN: cfg.portalN || 0
+  };
+}
+
+/* ---------------- 出生空岛 ---------------- */
+function buildSpawn() {
+  const items = [
+    { t: 'bld', kind: 'apart', w: 62, h: 150 },
+    { t: 'shop', id: 'store', w: 96 },
+    { t: 'shop', id: 'ramen', w: 96 },
+    { t: 'bld', kind: 'factory', w: 96, h: 118 },
+    { t: 'shop', id: 'cyber', w: 96 },
+    { t: 'shop', id: 'music', w: 96 },
+    { t: 'bld', kind: 'warehouse', w: 88, h: 76 },
+    { t: 'shop', id: 'cloth', w: 96 },
+    { t: 'portal', to: 'hub5', w: 104, label: '传送门 · 浮空中枢' },
+    { t: 'shop', id: 'bank', w: 96 },
+    { t: 'bld', kind: 'apart', w: 62, h: 170 },
+    { t: 'shop', id: 'cafe', w: 96 },
+    { t: 'shop', id: 'flower', w: 96 },
+    { t: 'bld', kind: 'parking', w: 74, h: 110 },
+    { t: 'shop', id: 'tool', w: 96 },
+    { t: 'shop', id: 'arcade', w: 96 },
+    { t: 'bld', kind: 'apart', w: 62, h: 140 }
+  ];
+  return makeIslandScene({
+    id: 'spawn', pal: PAL.spawn, title: '出生空岛',
+    items, gap: 6,
+    upper: ['apart', 'shop:cafe', 'factory', 'shop:arcade', 'warehouse']
+  });
+}
+
+/* ---------------- 浮空中枢：5 个世界门 ---------------- */
+function buildHub() {
+  const items = [
+    { t: 'bld', kind: 'apart', w: 62, h: 150 },
+    { t: 'shop', id: 'cafe', w: 96 },
+    { t: 'bld', kind: 'factory', w: 88, h: 104 },
+    { t: 'portal', to: 'world', i: 0, w: 112, label: '进入 · ' + worldName(0), sub: WORLD_INFO[0].desc },
+    { t: 'portal', to: 'world', i: 1, w: 112, label: '进入 · ' + worldName(1), sub: WORLD_INFO[1].desc },
+    { t: 'portal', to: 'world', i: 2, w: 112, label: '进入 · ' + worldName(2), sub: WORLD_INFO[2].desc },
+    { t: 'portal', to: 'world', i: 3, w: 112, label: '进入 · ' + worldName(3), sub: WORLD_INFO[3].desc },
+    { t: 'portal', to: 'world', i: 4, w: 112, label: '进入 · ' + worldName(4), sub: WORLD_INFO[4].desc },
+    { t: 'bld', kind: 'warehouse', w: 80, h: 70 },
+    { t: 'shop', id: 'tool', w: 96 },
+    { t: 'bld', kind: 'apart', w: 58, h: 170 },
+    { t: 'shop', id: 'arcade', w: 96 },
+    { t: 'portal', to: 'spawn', w: 104, label: '返回 · 出生空岛' }
+  ];
+  return makeIslandScene({
+    id: 'hub5', pal: PAL.hub5, title: '浮空中枢',
+    items, gap: 8
+  });
+}
+
+/* ---------------- 世界岛：商铺 + 大型建筑 + 5~10 个挑战门 ---------------- */
+function buildWorldIsland(idx) {
+  const pal = PAL.worlds[idx];
+  const n = 5 + idx;                         // 5 ~ 9 个挑战
+  const shopPool = ['store', 'ramen', 'cyber', 'cafe', 'flower', 'tool', 'music', 'bank'];
+  const items = [
+    { t: 'bld', kind: 'apart', w: 62, h: 140 },
+    { t: 'shop', id: shopPool[idx % shopPool.length], w: 96 },
+    { t: 'bld', kind: idx === 3 ? 'factory' : 'warehouse', w: 90, h: idx === 3 ? 120 : 74 },
+    { t: 'shop', id: shopPool[(idx + 3) % shopPool.length], w: 96 },
+    { t: 'bld', kind: 'parking', w: 70, h: 104 },
+    { t: 'shop', id: shopPool[(idx + 5) % shopPool.length], w: 96 },
+    { t: 'bld', kind: 'apart', w: 62, h: 160 }
+  ];
+  for (let c = 0; c < n; c++) {
+    items.push({
+      t: 'portal', to: 'challenge', i: idx, c, w: 104,
+      label: '挑战 ' + (idx + 1) + '-' + (c + 1),
+      sub: '跑酷 · ' + (3 + (c % 3)) + ' 个任务点'
+    });
+  }
+  items.push({ t: 'portal', to: 'hub5', w: 100, label: '返回 · 浮空中枢' });
+
+  // 挑战门之间穿插大型建筑，街道不空
+  const mixed = [];
+  items.forEach((it, i) => {
+    mixed.push(it);
+    if (it.t === 'portal' && it.to === 'challenge' && i % 2 === 0) {
+      mixed.push({ t: 'bld', kind: i % 4 === 0 ? 'apart' : 'warehouse', w: 58, h: i % 4 === 0 ? 120 : 66 });
+    }
+  });
+
+  const sc = makeIslandScene({
+    id: 'world', pal, title: worldName(idx),
+    items: mixed, gap: 6, portalN: n, weather: 'none'
+  });
+  sc.world = idx;
+  sc.challenges = n;
+  return sc;
+}
+
+/* ---------------- 跑酷挑战 ---------------- */
+function buildChallenge(wi, ci) {
+  const pal = PAL.worlds[wi];
+  const rng = mulberry32(9001 + wi * 733 + ci * 137);
+  const plats = [], coins = [], beacons = [], spots = [];
+
+  let x = -40, y = 252;
+  plats.push({ x: -40, y: 252, w: 190, h: 90 });
+
+  x = 150;
+  const steps = 26 + ci * 3 + wi * 2;
+  const ys = [];
+  for (let i = 0; i < steps; i++) {
+    const gap = Math.round(24 + rng() * 28 + ci * 1.2);
+    const w = Math.round(54 + rng() * 70);
+    const dy = Math.round((rng() * 2 - 1) * 30);
+    const ny = clamp(y + dy, 132, 300);
+    x += gap;
+    if (gap > 44 && rng() > 0.5) {
+      plats.push({ x: x - gap * 0.5 - 12, y: Math.min(y, ny) + 14, w: 24, h: 10 });
+    }
+    plats.push({ x, y: ny, w, h: 16 });
+    const arc = 2 + (rng() > 0.45 ? 1 : 0);
+    for (let c = 0; c < arc; c++) {
+      const tt = (c + 1) / (arc + 1);
+      coins.push({
+        x: x - gap + gap * tt,
+        y: Math.min(y, ny) - 24 - Math.sin(tt * Math.PI) * 16,
+        got: false, ph: rng() * 9
+      });
+    }
+    if (rng() > 0.5) coins.push({ x: x + w * (0.2 + rng() * 0.6), y: ny - 18, got: false, ph: rng() * 9 });
+    ys.push({ x, y: ny, w });
+    y = ny;
+    x += w;
+  }
+
+  const endX = x + 46;
+  plats.push({ x: endX, y, w: 240, h: 26 });
+
+  const beaconN = 3 + (ci % 3);
+  const picks = [];
+  for (let k = 0; k < beaconN; k++) {
+    picks.push(Math.round((k + 0.6) * ys.length / beaconN));
+  }
+  for (let k = 0; k < picks.length; k++) {
+    const p = ys[clamp(picks[k], 0, ys.length - 1)];
+    const id = 'w' + wi + 'c' + ci + 't' + k;
+    beacons.push({ id, idx: k, x: p.x + p.w / 2, y: p.y, done: !!G.tasksDone[id] });
+  }
+
+  spots.push({ kind: 'world', i: wi, x: endX + 190, y, r: 34, label: '出口 · 返回' + WORLD_INFO[wi].name });
+
+  return {
+    id: 'challenge', kind: 'challenge', world: wi, chal: ci,
+    pal, title: '挑战 ' + (wi + 1) + '-' + (ci + 1) + ' · ' + WORLD_INFO[wi].name,
+    platforms: plats, spots, coins, beacons, buildings: [], decos: [],
+    b: { x0: -60, x1: endX + 320, y0: 40, y1: 240 },
+    spawn: { x: 10, y: 220 },
+    killY: 470,
+    weather: wi === 1 ? 'rain' : (wi === 3 ? 'spark' : (wi === 4 ? 'dust' : 'none')),
+    bg: 'city'
+  };
+}
+
+/* ---------------- 切换 ---------------- */
+function loadScene(kind, a, b) {
+  if (kind === 'spawn') SC = buildSpawn();
+  else if (kind === 'hub5') SC = buildHub();
+  else if (kind === 'inside') SC = buildInside(a);
+  else if (kind === 'world') { G.world = a | 0; SC = buildWorldIsland(G.world); }
+  else if (kind === 'challenge') { G.world = a | 0; G.chal = b | 0; SC = buildChallenge(G.world, G.chal); }
+  else SC = buildSpawn();
+
+  G.scene = SC.id;
+  P.x = SC.spawn.x; P.y = SC.spawn.y;
+  P.vx = 0; P.vy = 0; P.onGround = false; P.jumps = 0; P.dashT = 0;
+  P.face = 1;
+  CAM.x = clamp(P.x - VIEW.w * 0.35, SC.b.x0, SC.b.x1 - VIEW.w);
+  CAM.y = clamp(P.y - VIEW.h * 0.55, SC.b.y0, SC.b.y1);
+  G.fade = 1;
+  if (typeof buildCityFor === 'function' && SC.bg !== 'inside') buildCityFor(SC);
+  if (SC.bg === 'islands' && typeof buildBackRowCanvas === 'function') SC.backRow = buildBackRowCanvas(SC);
+  initWeather(SC.weather, 80);
+  if (typeof ui !== 'undefined' && ui.area) ui.area.textContent = SC.title;
+  if (typeof scanInteract === 'function') scanInteract();
+}
+
+function gotoScene(kind, a, b) {
+  SFX.door();
+  loadScene(kind, a, b);
+}
+
+/* ---------------- 进度 ---------------- */
+function challengeCleared(wi, ci) {
+  G.chalClear = G.chalClear || {};
+  return !!G.chalClear['w' + wi + 'c' + ci];
+}
+
+function worldDone(i) {
+  const n = 5 + i;
+  for (let c = 0; c < n; c++) if (!challengeCleared(i, c)) return false;
+  return true;
+}
+
+/* ==== 30-play.js ==== */
+'use strict';
+/* =========================================================================
+   30 play — 2D 平台物理、相机、交互、重生
+   ========================================================================= */
+
+const PH = {
+  grav: 1520,
+  jumpV: 432,
+  accel: 1500,
+  fric: 1900,
+  maxFall: 620,
+  airMul: 0.72
+};
+
+function maxSpeed() {
+  return 152 + G.up.spd * 12 + (P.dashT > 0 ? 200 : 0);
+}
+function jumpPower() {
+  return PH.jumpV + G.up.jmp * 30;
+}
+
+function jump(power) {
+  P.vy = -(power || jumpPower());
+  P.onGround = false;
+  P.coyote = 0;
+  P.buffer = 0;
+  SFX.jump();
+  for (let i = 0; i < 5; i++) {
+    P.dust = P.dust || [];
+    P.dust.push({ x: P.x + P.w / 2, y: P.y + P.h, vx: rnd(-40, 40), vy: rnd(-30, -5), l: 0.3 });
+  }
+}
+
+function overlap(ax, ay, aw, ah, s) {
+  return ax < s.x + s.w && ax + aw > s.x && ay < s.y + s.h && ay + ah > s.y;
+}
+
+function moveX(dx) {
+  P.x += dx;
+  for (const s of SC.platforms) {
+    if (s.oneWay) continue;
+    if (overlap(P.x, P.y, P.w, P.h, s)) {
+      if (dx > 0) P.x = s.x - P.w;
+      else if (dx < 0) P.x = s.x + s.w;
+      P.vx = 0;
+    }
+  }
+}
+
+function moveY(dy) {
+  const prevFeet = P.y + P.h;
+  P.y += dy;
+  P.onGround = false;
+  for (const s of SC.platforms) {
+    if (!overlap(P.x, P.y, P.w, P.h, s)) continue;
+    if (s.oneWay) {
+      // 单向平台：只能从上面落下来，可以从下面穿上去
+      if (dy <= 0 || prevFeet > s.y + 2) continue;
+      if (P.vy > 90) SFX.land();
+      P.y = s.y - P.h;
+      P.vy = 0;
+      P.onGround = true;
+      P.jumps = 0;
+      continue;
+    }
+    if (overlap(P.x, P.y, P.w, P.h, s)) {
+      if (dy > 0) {
+        P.y = s.y - P.h;
+        P.vy = 0;
+        if (!P.onGround) SFX.land();
+        P.onGround = true;
+        P.jumps = 0;
+      } else if (dy < 0) {
+        P.y = s.y + s.h;
+        P.vy = 0;
+      }
+    }
+  }
+}
+
+function updatePlayer(dt) {
+  const dir = input.r - input.l;
+
+  // 水平加速 / 摩擦
+  const ms = maxSpeed();
+  if (dir !== 0) {
+    const am = G.up.grip ? 0.92 : PH.airMul;
+    P.vx += dir * PH.accel * dt * (P.onGround ? 1 : am);
+    P.face = dir;
+    if (P.dashT <= 0) P.vx = clamp(P.vx, -ms, ms);
+  } else if (P.dashT <= 0) {
+    const f = PH.fric * dt * (P.onGround ? 1 : 0.45);
+    if (Math.abs(P.vx) <= f) P.vx = 0;
+    else P.vx -= Math.sign(P.vx) * f;
+  }
+
+  // 冲刺
+  P.dashCd = Math.max(0, P.dashCd - dt);
+  if (P.dashT > 0) {
+    P.dashT -= dt;
+    P.vx = P.face * 340;
+  } else if (input.dash && G.up.dash && P.dashCd <= 0) {
+    P.dashT = 0.16;
+    let cd = (G.owned && G.owned.batt ? 0.55 : 0.95);
+    if (G.up.boots) cd -= 0.2;
+    P.dashCd = Math.max(0.28, cd);
+    P.vx = P.face * 340;
+    SFX.jump();
+  }
+  if (input.dash) input.dash = 0;
+
+  // 跳跃缓冲 / 土狼时间
+  P.coyote = P.onGround ? 0.1 : Math.max(0, P.coyote - dt);
+  P.buffer = input.jp ? 0.13 : Math.max(0, P.buffer - dt);
+  if (input.jp) input.jp = 0;
+
+  if (P.buffer > 0) {
+    if (P.onGround || P.coyote > 0) {
+      jump();
+      P.jumps = 1;
+    } else if (G.up.dj && P.jumps < 2) {
+      jump(jumpPower() * 0.9);
+      P.jumps = 2;
+      for (let i = 0; i < 6; i++) {
+        (P.dust = P.dust || []).push({
+          x: P.x + P.w / 2, y: P.y + P.h * 0.8,
+          vx: rnd(-60, 60), vy: rnd(-10, 40), l: 0.3
+        });
+      }
+    }
+  }
+
+  // 松键截断（可变跳跃高度）
+  if (!input.jh && P.vy < -140) P.vy = -140;
+
+  // 重力
+  P.vy = Math.min(P.vy + PH.grav * dt, PH.maxFall);
+
+  // 位移（分子步，防穿模）
+  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(P.vx * dt), Math.abs(P.vy * dt)) / 8));
+  for (let i = 0; i < steps; i++) {
+    moveX((P.vx * dt) / steps);
+    moveY((P.vy * dt) / steps);
+  }
+
+  // 动画状态
+  if (!P.onGround) P.state = P.vy < 0 ? 'jump' : 'fall';
+  else if (Math.abs(P.vx) > 12) P.state = 'run';
+  else P.state = 'idle';
+  P.anim += (P.state === 'run' ? Math.abs(P.vx) * 0.028 : 3) * dt * 6;
+
+  // 粒子
+  if (P.dust) {
+    for (let i = P.dust.length - 1; i >= 0; i--) {
+      const d = P.dust[i];
+      d.l -= dt;
+      d.x += d.vx * dt; d.y += d.vy * dt; d.vy += 200 * dt;
+      if (d.l <= 0) P.dust.splice(i, 1);
+    }
+  }
+
+  // 边界
+  if (P.y > SC.killY) { onFall(); return; }
+}
+
+function onFall() {
+  G.falls++;
+  SFX.fall();
+  if (G.scene === 'inside') {
+    P.x = SC.spawn.x; P.y = SC.spawn.y; P.vx = 0; P.vy = 0;
+    return;
+  }
+  if (G.scene === 'challenge') {
+    toast('掉下去了 · 回到' + WORLD_INFO[G.world].name);
+    gotoScene('world', G.world);
+    return;
+  }
+  if (G.scene === 'world') toast('掉下去了 · 回到这座岛');
+  else if (G.scene === 'spawn') toast('掉下去了 · 回到出生空岛');
+  else toast('掉下去了……');
+  P.x = SC.spawn.x; P.y = SC.spawn.y; P.vx = 0; P.vy = 0;
+}
+
+/* ---------------- 相机 ---------------- */
+function updateCamera(dt, snap) {
+  const look = P.face * 26;
+  const tx = P.x + P.w / 2 - VIEW.w / 2 + look;
+  const ty = P.y + P.h / 2 - VIEW.h * 0.55;
+  if (snap) {
+    CAM.x = tx; CAM.y = ty;
+  } else {
+    CAM.x = lerp(CAM.x, tx, 1 - Math.exp(-7 * dt));
+    CAM.y = lerp(CAM.y, ty, 1 - Math.exp(-5 * dt));
+  }
+  CAM.x = clamp(CAM.x, SC.b.x0, Math.max(SC.b.x0, SC.b.x1 - VIEW.w));
+  CAM.y = clamp(CAM.y, SC.b.y0, Math.max(SC.b.y0, SC.b.y1 - VIEW.h * 0.4));
+}
+
+/* ---------------- 交互 ---------------- */
+let nearSpot = null;
+
+function scanInteract() {
+  nearSpot = null;
+  if (!SC) return;
+  const cx = P.x + P.w / 2;
+  const feet = P.y + P.h;
+  let bd = 1e9;
+  for (const s of SC.spots) {
+    const dx = Math.abs(cx - s.x);
+    const dy = Math.abs(feet - s.y);
+    if (dx < s.r && dy < 46 && dx < bd) { bd = dx; nearSpot = s; }
+  }
+  if (nearSpot) {
+    let label = nearSpot.label;
+    if (nearSpot.kind === 'shop') label = '进店 · ' + nearSpot.label;
+    else if (nearSpot.kind === 'world' || nearSpot.kind === 'challenge') label = '进入 · ' + nearSpot.label;
+    else if (nearSpot.kind === 'hub5') label = '进入传送门 · 浮空中枢';
+    else if (nearSpot.kind === 'lift') label = '乘电梯 · 选楼层';
+    else if (nearSpot.kind === 'buyStand') label = '买 ' + nearSpot.label + ' · ◎' + nearSpot.price;
+    else if (nearSpot.kind === 'buyDesk') label = '柜台 · 打开商品面板';
+    else if (nearSpot.kind === 'leave') label = '出门 · 回岛上';
+    else label = nearSpot.label;
+    showPrompt('E  ' + label);
+  } else {
+    showPrompt('');
+  }
+}
+
+function tryUse() {
+  if (G.shopOpen || G.liftOpen) return;
+  const s = nearSpot;
+  if (!s) return;
+  if (s.kind === 'shop') { enterShop(s.id); }
+  else if (s.kind === 'leave') exitShop();
+  else if (s.kind === 'buyDesk') openShop(SC.shopId);
+  else if (s.kind === 'buyStand') {
+    const shop = SHOPS.find(x => x.id === SC.shopId);
+    if (shop && SC.stands[s.i]) buyItem(shop, SC.stands[s.i].item.id);
+  }
+  else if (s.kind === 'hub5') gotoScene('hub5');
+  else if (s.kind === 'spawn') gotoScene('spawn');
+  else if (s.kind === 'exit') gotoScene('hub5');
+  else if (s.kind === 'world') { G.lastWorld = s.i; gotoScene('world', s.i); }
+  else if (s.kind === 'challenge') gotoScene('challenge', s.i, s.c);
+  else if (s.kind === 'lift') openLift(s);
+}
+
+/* ---------------- 任务点 ---------------- */
+function updateBeacons() {
+  const cx = P.x + P.w / 2;
+  const feet = P.y + P.h;
+  const bonus = G.up.chipBonus || 0;
+  for (const b of SC.beacons) {
+    if (b.done) continue;
+    if (Math.abs(cx - b.x) < 24 && Math.abs(feet - b.y) < 52) {
+      b.done = true;
+      G.tasksDone[b.id] = true;
+      G.chips += 5 + bonus;
+      G.coins += 20;
+      SFX.task();
+      toast('任务完成 · 芯片 +' + (5 + bonus) + ' · 金币 +20');
+      if (SC.beacons.every(v => v.done) && !SC.cleared) {
+        SC.cleared = true;
+        G.chalClear = G.chalClear || {};
+        G.chalClear['w' + SC.world + 'c' + SC.chal] = true;
+        G.chips += 15;
+        setTimeout(() => { toast('挑战通关 · 芯片 +15'); updateHUD(); }, 700);
+      }
+      updateHUD();
+    }
+  }
+}
+
+/* ---------------- 金币 ---------------- */
+function updateCoins() {
+  const cx = P.x + P.w / 2, cy = P.y + P.h / 2;
+  const gain = 1 + (G.up.coinBonus || 0);
+  for (const c of SC.coins) {
+    if (c.got) continue;
+    if (Math.abs(cx - c.x) < 12 && Math.abs(cy - c.y) < 14) {
+      c.got = true;
+      G.coins += gain;
+      SFX.coin();
+      updateHUD();
+    }
+  }
+}
+
+/* ---------------- 每帧 ---------------- */
+function updatePlay(dt) {
+  if (G.shopOpen || G.liftOpen) return;
+  updateBuffs(dt);
+  const sub = Math.min(dt, 1 / 30);
+  updatePlayer(sub);
+  if (G.scene === 'challenge') { updateBeacons(); updateCoins(); }
+  else updateCoins();
+  updateCamera(sub, false);
+  scanInteract();
+  if (input.e) { input.e = 0; tryUse(); }
+}
+
+/* ==== 40-ui.js ==== */
+'use strict';
+/* =========================================================================
+   40 ui — HUD / 提示 / 商店 / 标题 / 暂停 / 通关
+   ========================================================================= */
+
+const ui = {};
+
+function uiInit() {
+  const $ = id => document.getElementById(id);
+  ui.coins = $('coins');
+  ui.chips = $('chips');
+  ui.area = $('area');
+  ui.prompt = $('prompt');
+  ui.toast = $('toast');
+  ui.title = $('title');
+  ui.shop = $('shop');
+  ui.shopName = $('shopName');
+  ui.shopKeep = $('shopKeep');
+  ui.shopLine = $('shopLine');
+  ui.shopCoins = $('shopCoins');
+  ui.shopList = $('shopList');
+  ui.pause = $('pause');
+  ui.win = $('win');
+  ui.best = $('best');
+  ui.timer = $('timer');
+  ui.shopArt = $('shopArt');
+  ui.lift = $('lift');
+  ui.liftBtns = $('liftBtns');
+  ui.liftSub = $('liftSub');
+  updateHUD();
+}
+
+/* 限时效果条（画在画布左上角，不占用 HUD 的三个 pill） */
+function drawBuffs() {
+  const list = G.buffs || [];
+  if (!list.length) return;
+  let y = 40;
+  for (const b of list) {
+    const pct = clamp(b.t / b.dur, 0, 1);
+    const w = 96, x = 10;
+    ctx.globalAlpha = 0.7;
+    r(x, y, w, 14, '#070c14');
+    ctx.globalAlpha = 1;
+    rl(x, y, w * pct, 14, b.t < 10 ? '#ff6b35' : '#22e0ff', 0.22);
+    rl(x, y, w, 1, '#22e0ff', 0.45);
+    ctx.font = 'bold 9px "Microsoft YaHei",monospace';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#d8ecff';
+    ctx.fillText(b.name, x + 5, y + 7.5);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = b.t < 10 ? '#ff9f43' : '#ffcf4d';
+    ctx.fillText(Math.ceil(b.t) + 's', x + w - 5, y + 7.5);
+    y += 17;
+  }
+  ctx.textAlign = 'left';
+}
+
+function updateHUD() {
+  if (!ui.coins) return;
+  ui.coins.textContent = G.coins;
+  ui.chips.textContent = G.chips;
+  if (ui.area) ui.area.textContent = SC ? SC.title : '出生空岛';
+}
+
+let promptTxt = '';
+function showPrompt(t) {
+  promptTxt = t;
+  if (!ui.prompt) return;
+  if (t) {
+    ui.prompt.textContent = t;
+    ui.prompt.classList.add('on');
+  } else {
+    ui.prompt.classList.remove('on');
+  }
+}
+
+let toastT = 0, toastTimer = null;
+function toast(msg) {
+  if (!ui.toast) return;
+  ui.toast.textContent = msg;
+  ui.toast.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => ui.toast.classList.remove('on'), 1900);
+}
+
+/* ---------------- 商店 ---------------- */
+function openShop(id) {
+  if (!ui.shopName) uiInit();
+  const shop = SHOPS.find(s => s.id === id);
+  if (!shop) return;
+  G.shopOpen = id;
+  G.owned = G.owned || {};
+  ui.shopName.textContent = shop.name;
+  ui.shopKeep.textContent = shop.keeper;
+  ui.shopLine.textContent = '“' + shop.line + '”';
+  ui.shopCoins.textContent = G.coins;
+  if (ui.shopArt && typeof drawShopInterior === 'function') {
+    const inside = (G.scene === 'inside');
+    ui.shopArt.style.display = inside ? 'none' : '';
+    if (!inside) drawShopInterior(ui.shopArt.getContext('2d'), id);
+  }
+  renderShopItems(shop);
+  ui.shop.classList.add('on');
+  showPrompt('');
+  SFX.door();
+}
+
+function renderShopItems(shop) {
+  ui.shopList.innerHTML = '';
+  shop.items.forEach(it => {
+    const own = (G.owned[it.id] || 0);
+    const maxed = own >= it.max;
+    const row = document.createElement('div');
+    row.className = 'item' + (maxed ? ' maxed' : '');
+    row.innerHTML =
+      '<div class="it"><b>' + it.name + '</b>' +
+      '<span>' + it.desc + (it.max > 1 && !it.dur ? '（' + own + '/' + it.max + '）' : '') + '</span></div>' +
+      '<div class="ip"><span class="price">' + (maxed ? '已拥有' : '◎ ' + it.price) + '</span>' +
+      '<button class="buy" data-id="' + it.id + '"' + (maxed ? ' disabled' : '') + '>' +
+      (maxed ? '—' : '购买') + '</button></div>';
+    ui.shopList.appendChild(row);
+  });
+  ui.shopList.querySelectorAll('.buy').forEach(btn => {
+    btn.addEventListener('click', () => buyItem(shop, btn.dataset.id));
+  });
+}
+
+function buyItem(shop, itemId) {
+  const it = shop.items.find(i => i.id === itemId);
+  if (!it) return;
+  G.owned = G.owned || {};
+  const own = G.owned[it.id] || 0;
+  if (own >= it.max) return;
+  if (G.coins < it.price) { toast('金币不够，差 ' + (it.price - G.coins) + ' 枚'); return; }
+  G.coins -= it.price;
+  G.owned[it.id] = own + 1;
+  if (it.dur && it.eff) addBuff(it);
+  else applyItem(it.id);
+  SFX.buy();
+  ui.shopCoins.textContent = G.coins;
+  updateHUD();
+  renderShopItems(shop);
+  toast(it.dur ? ('购买 · ' + it.name + '（' + it.dur + ' 秒）') : ('永久获得 · ' + it.name));
+}
+
+/* ---------------- 限时效果 ---------------- */
+function addBuff(it) {
+  G.buffs = G.buffs || [];
+  const ex = G.buffs.find(b => b.id === it.id);
+  if (ex) { ex.t = it.dur; return; }        // 同一种只续时间，不叠加
+  for (const k in it.eff) {
+    const v = it.eff[k];
+    if (typeof v === 'boolean') G.up[k] = v;
+    else G.up[k] += v;
+  }
+  G.buffs.push({ id: it.id, name: it.name, dur: it.dur, t: it.dur, eff: it.eff });
+}
+
+function clearBuff(b) {
+  for (const k in b.eff) {
+    const v = b.eff[k];
+    if (typeof v === 'boolean') G.up[k] = false;
+    else G.up[k] = Math.max(0, G.up[k] - v);
+  }
+}
+
+function updateBuffs(dt) {
+  if (!G.buffs || !G.buffs.length) return;
+  for (const b of G.buffs) {
+    b.t -= dt;
+    if (b.t <= 0) {
+      clearBuff(b);
+      b.dead = true;
+      toast('效果结束 · ' + b.name);
+    }
+  }
+  G.buffs = G.buffs.filter(b => !b.dead);
+}
+
+function applyItem(id) {
+  switch (id) {
+    case 'drink': G.up.spd += 1; break;
+    case 'batt': break;                     // 由 G.owned.batt 判定
+    case 'dj': G.up.dj = true; break;
+    case 'leg': G.up.jmp += 1; break;
+    case 'ramen': G.up.spd += 0.7; break;
+    case 'dash': G.up.dash = true; break;
+    case 'coat0': G.up.coat = 0; break;
+    case 'coat1': G.up.coat = 1; break;
+    case 'coat2': G.up.coat = 2; break;
+    case 'dry': G.up.coat = 3; break;
+    case 'detect': G.up.detect = true; break;
+    case 'coffee': G.up.spd += 1; break;
+    case 'espresso': G.up.jmp += 1; break;
+    case 'clover': G.up.coinBonus = 1; break;
+    case 'boots': G.up.boots = true; break;
+    case 'grip': G.up.grip = true; break;
+    case 'badge': G.up.chipBonus = 2; break;
+  }
+}
+
+function closeShop() {
+  if (!G.shopOpen) return;
+  G.shopOpen = null;
+  ui.shop.classList.remove('on');
+  SFX.door();
+}
+
+/* ---------------- 电梯 ---------------- */
+function liftCarSpot(spot) {
+  if (!SC || !SC.spots || !spot) return null;
+  for (const v of SC.spots) {
+    if (v.kind === 'lift' && !v.lvl && Math.abs(v.x - spot.x) < 8) return v;
+  }
+  return null;
+}
+
+function openLift(spot) {
+  if (!ui.liftBtns) uiInit();
+  G.liftOpen = spot;
+  const floors = (SC && SC.floors) ? SC.floors : [{ y: 250, name: '1F' }];
+  const here = spot.y;
+  // 轿厢开到玩家这一层
+  const carSpot = liftCarSpot(spot);
+  if (carSpot) carSpot.car = here < 200;
+  ui.liftSub.textContent = SC ? SC.title : '';
+  ui.liftBtns.innerHTML = '';
+  floors.forEach((f, i) => {
+    const b = document.createElement('button');
+    b.className = 'fbtn' + (Math.abs(f.y - here) < 6 ? ' now' : '');
+    b.innerHTML = '<b>' + (i + 1) + '</b>' + f.name;
+    b.addEventListener('click', () => gotoFloor(f));
+    ui.liftBtns.appendChild(b);
+  });
+  ui.lift.classList.add('on');
+  showPrompt('');
+  SFX.door();
+}
+
+function closeLift() {
+  if (!G.liftOpen) return;
+  G.liftOpen = null;
+  if (ui.lift) ui.lift.classList.remove('on');
+  SFX.door();
+}
+
+function gotoFloor(f) {
+  const spot = G.liftOpen;
+  closeLift();
+  if (!spot) return;
+  // 轿厢停在目标层
+  const carSpot = liftCarSpot(spot);
+  if (carSpot) carSpot.car = f.y < 200;
+  G.fade = 1;
+  P.x = spot.x + 20;
+  P.y = f.y - P.h;
+  P.vx = 0; P.vy = 0; P.onGround = true; P.jumps = 0; P.coyote = 0;
+  CAM.x = clamp(P.x - VIEW.w * 0.35, SC.b.x0, SC.b.x1 - VIEW.w);
+  CAM.y = clamp(P.y - VIEW.h * 0.55, SC.b.y0, SC.b.y1);
+  toast('电梯 · ' + f.name);
+  if (typeof scanInteract === 'function') scanInteract();
+}
+
+/* ---------------- 标题 / 暂停 / 通关 ---------------- */
+function startGame() {
+  G.started = true;
+  G.liftOpen = null;
+  ui.title.classList.remove('on');
+  SFX.resume();
+  loadScene('spawn');
+  toast('往左走是店，往右走也是店，中间是传送门');
+}
+
+function togglePause() {
+  if (!G.started || G.won) return;
+  G.paused = !G.paused;
+  ui.pause.classList.toggle('on', G.paused);
+}
+
+function showWin() {
+  const s = Math.floor(G.time);
+  ui.best.innerHTML =
+    '芯片 <b>' + G.chips + '/' + G.chipsTotal + '</b>　金币 <b>' + G.coins + '</b>　用时 <b>' +
+    Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + '</b>　掉落 <b>' + G.falls + '</b> 次';
+  ui.win.classList.add('on');
+  ui.pause.classList.remove('on');
+  G.paused = true;
+}
+
+/* ---------------- 绑定 ---------------- */
+function uiBind() {
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('shopClose').addEventListener('click', closeShop);
+  document.getElementById('liftClose').addEventListener('click', closeLift);
+  document.getElementById('resumeBtn').addEventListener('click', togglePause);
+  document.getElementById('againBtn').addEventListener('click', () => location.reload());
+  const mb = document.getElementById('muteBtn');
+  mb.addEventListener('click', () => {
+    const m = !SFX.isMuted();
+    SFX.mute(m);
+    mb.textContent = m ? '静音' : '音效';
+    mb.classList.toggle('off', m);
+  });
+
+  addEventListener('nr-esc', () => {
+    if (G.shopOpen) closeShop();
+    else if (G.liftOpen) closeLift();
+    else togglePause();
+  });
+
+  // 触屏
+  const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  if (isTouch) {
+    const pad = document.getElementById('touch');
+    pad.classList.add('on');
+    const hold = (el, on, off) => {
+      el.addEventListener('touchstart', e => { e.preventDefault(); on(); }, { passive: false });
+      el.addEventListener('touchend', e => { e.preventDefault(); off && off(); }, { passive: false });
+      el.addEventListener('touchcancel', e => { e.preventDefault(); off && off(); }, { passive: false });
+    };
+    hold(document.getElementById('tLeft'), () => { keys.tl = 1; syncTouch(); }, () => { keys.tl = 0; syncTouch(); });
+    hold(document.getElementById('tRight'), () => { keys.tr = 1; syncTouch(); }, () => { keys.tr = 0; syncTouch(); });
+    hold(document.getElementById('tJump'), () => { input.jp = 1; input.jh = 1; }, () => { input.jh = 0; });
+    hold(document.getElementById('tUse'), () => { input.e = 1; });
+  }
+}
+
+function syncTouch() {
+  input.l = (keys.KeyA || keys.ArrowLeft || keys.tl) ? 1 : 0;
+  input.r = (keys.KeyD || keys.ArrowRight || keys.tr) ? 1 : 0;
+}
+
+/* ==== 90-boot.js ==== */
+'use strict';
+/* =========================================================================
+   90 boot — 渲染与主循环
+   ========================================================================= */
+
+function drawPlatform(p, pal) {
+  r(p.x, p.y, p.w, 6, pal.top);
+  r(p.x, p.y, p.w, 2, pal.edge);
+  rl(p.x, p.y + 6, p.w, 3, pal.edge, 0.16);
+  r(p.x, p.y + 6, p.w, Math.max(2, p.h - 6), pal.isl);
+  // 侧面高光 / 底部暗边
+  rl(p.x, p.y + 5, 1, p.h - 5, '#ffffff', 0.06);
+  r(p.x + 2, p.y + p.h - 2, p.w - 4, 2, '#00000066');
+  // 边缘颗粒
+  const rng = mulberry32(Math.floor(p.x) + 11);
+  for (let i = 0; i < Math.min(10, p.w / 10); i++) {
+    rl(p.x + rng() * p.w, p.y + 2, 2, 1, '#ffffff', 0.12);
+  }
+}
+
+function drawSpot(s, sc, t) {
+  if (s.kind === 'shop') drawShop(s.id, s.x, s.y, t);
+  else if (s.kind === 'hub5') drawPortal(s.x, s.y, '#22e0ff', t, 'HUB');
+  else if (s.kind === 'spawn') drawPortal(s.x, s.y, '#ff3ea5', t, 'HOME');
+  else if (s.kind === 'exit') drawPortal(s.x, s.y, '#ffcf4d', t, 'EXIT');
+  else if (s.kind === 'challenge') {
+    drawPortal(s.x, s.y, sc.pal.edge, t, String(s.c + 1));
+    if (challengeCleared(s.i, s.c)) signText('✓', s.x, s.y - 70, '#5dff9b', 10, false);
+  } else if (s.kind === 'world') {
+    drawPortal(s.x, s.y, sc.pal.edge, t, String(s.i + 1));
+    if (worldDone(s.i)) signText('✓', s.x, s.y - 66, '#5dff9b', 10, false);
+  }
+}
+
+function drawBackground(scene, t) {
+  const pal = scene.pal;
+  gradientSky(pal.sky);
+  stars(CAM.x, 991, t);
+
+  // 地平线霓虹辉光（衬出楼群剪影）
+  const hg = ctx.createLinearGradient(0, VIEW.h * 0.42, 0, VIEW.h * 0.9);
+  hg.addColorStop(0, 'rgba(0,0,0,0)');
+  hg.addColorStop(0.55, pal.edge + '22');
+  hg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = hg;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+
+  // 三层视差城市（空岛场景不画近景，免得楼压在岛下面）
+  drawCityLayers(scene.bg === 'islands');
+
+  // 城市场景在城市层上加一层压暗，让前景平台更好认
+  if (scene.bg === 'city') {
+    const vg2 = ctx.createLinearGradient(0, 110, 0, VIEW.h);
+    vg2.addColorStop(0, 'rgba(4,6,12,0)');
+    vg2.addColorStop(1, 'rgba(4,6,12,.3)');
+    ctx.fillStyle = vg2;
+    ctx.fillRect(0, 80, VIEW.w, VIEW.h - 80);
+  }
+
+  if (scene.bg === 'islands') {
+    const rng = mulberry32(77);
+    for (let i = 0; i < 6; i++) {
+      const bx = (i * 260 - CAM.x * 0.16) % 1600;
+      const x = bx < 0 ? bx + 1600 : bx;
+      floatIsland(x - 60, 58 + rng() * 54, 70 + rng() * 50, pal.far, pal.mid);
+    }
+    // 岛下方的低空云
+    for (let i = 0; i < 6; i++) {
+      const cx2 = ((i * 300 - CAM.x * 0.2) % 1800 + 1800) % 1800 - 120;
+      const cy2 = 322 + (i % 3) * 16;
+      ctx.globalAlpha = 0.09;
+      oval(cx2 + 80, cy2, 100, 9, '#9fd0ff');
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // 地平雾
+  const g = ctx.createLinearGradient(0, VIEW.h * 0.55, 0, VIEW.h);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,.28)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+}
+
+function render(dt, t) {
+  const sc = SC;
+  if (!sc) return;
+  if (sc.bg === 'inside') { renderInside(sc, t); return; }
+  drawBackground(sc, t);
+
+  ctx.save();
+  ctx.translate(-Math.round(CAM.x), -Math.round(CAM.y));
+
+  // 1. 岛体
+  for (const p of sc.platforms) if (p.island) drawIsland(p, sc.pal, t);
+
+  // 2. 连排背街楼（一条连续街墙，把建筑之间的缝填掉）
+  if (sc.backRow) ctx.drawImage(sc.backRow.cv, sc.backRow.x, sc.backRow.y);
+
+  // 3. 上层步道的支撑柱（画在楼后面，免得柱子横穿店面）
+  for (const p of sc.platforms) if (p.terrace) drawTerracePillars(p, sc.pal);
+
+  // 4. 上层：建筑 / 店铺 / 路灯
+  if (sc.buildings) for (const b of sc.buildings) {
+    if (b.lvl) drawBuildingProp(b.kind, b.x, b.y, b.w, b.h, b.seed, t);
+  }
+  for (const s of sc.spots) if (s.lvl) drawSpot(s, sc, t);
+  if (sc.decos) for (const d of sc.decos) if (d.lvl) drawDeco(d.kind, d.x, d.y, t);
+
+  // 5. 步道板 + 栏杆
+  for (const p of sc.platforms) if (p.terrace) drawTerrace(p, sc.pal, t);
+
+  // 6. 下层：建筑 / 街边小物件 / 店铺 / 传送门
+  if (sc.buildings) for (const b of sc.buildings) {
+    if (!b.lvl) drawBuildingProp(b.kind, b.x, b.y, b.w, b.h, b.seed, t);
+  }
+  if (sc.decos) for (const d of sc.decos) if (!d.lvl) drawDeco(d.kind, d.x, d.y, t);
+  for (const s of sc.spots) if (!s.lvl) drawSpot(s, sc, t);
+
+  // 6.5 电梯 / 其它前景结构（画在店面之前，不会被挡住）
+  for (const s of sc.spots) if (s.kind === 'lift' && !s.lvl) drawLift(s, t);
+
+  // 7. 跑酷关卡的平台
+  for (const p of sc.platforms) {
+    if (!p.island && !p.terrace && !p.step) drawPlatform(p, sc.pal);
+  }
+
+  // 任务点
+  for (const b of sc.beacons) drawBeacon(b.x, b.y, b.done, t, b.idx);
+
+  // 金币
+  for (const c of sc.coins) if (!c.got) drawCoin(c.x, c.y, t, c.ph);
+
+  // 玩家
+  drawPlayer(P, t);
+
+  // 粒子
+  if (P.dust) {
+    for (const d of P.dust) rl(d.x, d.y, 2, 2, '#ffffff', clamp(d.l * 2, 0, 0.6));
+  }
+
+  ctx.restore();
+
+  // 天气
+  if (sc.weather !== 'none') drawWeather(sc.weather, t, dt);
+
+  // 限时效果
+  drawBuffs();
+
+  // 暗角
+  const vg = ctx.createRadialGradient(VIEW.w / 2, VIEW.h / 2, VIEW.h * 0.35, VIEW.w / 2, VIEW.h / 2, VIEW.h * 0.95);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,.28)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+
+  // 转场
+  if (G.fade > 0) {
+    ctx.globalAlpha = G.fade;
+    ctx.fillStyle = '#04060c';
+    ctx.fillRect(0, 0, VIEW.w, VIEW.h);
+    ctx.globalAlpha = 1;
+  }
+}
+
+let lastT = 0;
+function loop(ts) {
+  requestAnimationFrame(loop);
+  if (!lastT) lastT = ts;
+  let dt = (ts - lastT) / 1000;
+  lastT = ts;
+  dt = clamp(dt, 0, 0.05);
+
+  if (G.started && !G.paused && !G.shopOpen && !G.liftOpen) {
+    G.time += dt;
+    updatePlay(dt);
+  }
+  if (G.fade > 0) G.fade = Math.max(0, G.fade - dt * 4);
+
+  render(dt, ts / 1000);
+
+  if (Math.floor(G.time * 10) % 3 === 0) updateHUD();
+}
+
+/* ---------------- 启动 ---------------- */
+function boot() {
+  fit();
+  uiInit();
+  uiBind();
+  loadScene('spawn');
+  requestAnimationFrame(loop);
+}
+
+window.addEventListener('load', boot);
+
+/* ==== 99-probe.js ==== */
+'use strict';
+/* =========================================================================
+   99 probe — 自动化验证（只在 #probe / #shot 时生效，正常游玩不影响）
+   ========================================================================= */
+
+(function () {
+  const hash = location.hash.replace('#', '');
+  if (!hash) return;
+  const params = new URLSearchParams(hash);
+  if (!params.has('probe') && !params.has('shot')) return;
+
+  function api() {
+    window.__NR = {
+      P, G, input, CAM,
+      get SC() { return SC; },
+      loadScene, gotoScene, openShop, closeShop, buyItem, tryUse,
+      tp(x, y) { P.x = x; P.y = y; P.vx = 0; P.vy = 0; },
+      step(n) { for (let i = 0; i < n; i++) updatePlay(1 / 60); },
+      snapCam() { updateCamera(0, true); }
+    };
+    return window.__NR;
+  }
+
+  function playMode() {
+    if (!ui.title) uiInit();
+    G.started = true;
+    G.paused = false;
+    ui.title.classList.remove('on');
+    if (G.shopOpen) closeShop();
+  }
+
+  function runProbe() {
+    const NR = api();
+    const R = {};
+    const cnt = k => SC.spots.filter(s => s.kind === k).length;
+
+    loadScene('spawn');
+    R.spawnShops = cnt('shop');
+    R.spawnBuildings = SC.buildings.length;
+    R.spawnPortal = cnt('hub5');
+    R.spawnIslandW = SC.platforms[0].w;
+
+    loadScene('hub5');
+    R.hubPortals = cnt('world');
+    R.hubReturn = cnt('spawn');
+    R.hubBuildings = SC.buildings.length;
+
+    // 每个世界的挑战门数量（应 5~10）
+    R.worlds = [];
+    let totalChal = 0;
+    for (let i = 0; i < 5; i++) {
+      loadScene('world', i);
+      const n = cnt('challenge');
+      totalChal += n;
+      R.worlds.push({ i, chal: n, shops: cnt('shop'), bld: SC.buildings.length });
+      if (!SC.platforms.length) R['w' + i + 'Fail'] = true;
+    }
+    R.totalChallenges = totalChal;
+
+    // 挑战关卡
+    loadScene('challenge', 0, 0);
+    R.chalPlatforms = SC.platforms.length;
+    R.chalCoins = SC.coins.length;
+    R.chalBeacons = SC.beacons.length;
+    R.chalExit = cnt('world');
+    R.chalTitle = SC.title;
+
+    // 跳跃高度
+    loadScene('challenge', 0, 0);
+    NR.tp(SC.platforms[0].x + 60, SC.platforms[0].y - P.h);
+    P.onGround = true; P.jumps = 0; P.vy = 0;
+    NR.step(2);
+    const y0 = P.y;
+    input.jp = 1; input.jh = 1;
+    let apex = 0;
+    for (let i = 0; i < 70; i++) { updatePlay(1 / 60); apex = Math.min(apex, P.y - y0); }
+    input.jh = 0;
+    R.jumpApex = Math.round(-apex);
+
+    // 跑动
+    loadScene('challenge', 0, 0);
+    const x0 = P.x;
+    input.r = 1;
+    for (let i = 0; i < 60; i++) updatePlay(1 / 60);
+    input.r = 0;
+    R.runDist = Math.round(P.x - x0);
+
+    // 金币
+    loadScene('challenge', 0, 0);
+    G.coins = 0;
+    const c0 = SC.coins[0];
+    NR.tp(c0.x - 6, c0.y - 9);
+    NR.step(2);
+    R.coinGain = G.coins;
+
+    // 任务点：每个 +5，全清 +15，芯片无上限
+    G.chips = 0;
+    for (const b of SC.beacons.slice()) {
+      NR.tp(b.x - 6, b.y - 24);
+      NR.step(3);
+    }
+    R.beaconsDone = SC.beacons.every(b => b.done);
+    R.chipsAfterOneChal = G.chips;
+    R.chalCleared = challengeCleared(0, 0);
+    // 再刷一遍，验证可以超过 20
+    loadScene('challenge', 0, 1);
+    for (const b of SC.beacons.slice()) {
+      NR.tp(b.x - 6, b.y - 24);
+      NR.step(3);
+    }
+    R.chipsAfterTwo = G.chips;
+    R.chipsNoCap = G.chips > 20;
+
+    // 掉落：挑战 → 回世界岛
+    const before = G.scene;
+    P.y = SC.killY + 60;
+    NR.step(3);
+    R.fellFrom = before;
+    R.fellTo = G.scene;
+    R.fellToWorld = G.world;
+
+    // 掉落：世界岛 → 同一座岛
+    loadScene('world', 3);
+    const spawnX = P.x;
+    NR.tp(P.x + 400, 240);
+    P.y = SC.killY + 60;
+    NR.step(3);
+    R.worldFallScene = G.scene;
+    R.worldFallWorld = G.world;
+    R.worldFallHome = Math.abs(P.x - spawnX) < 4;
+
+    // 掉落：出生空岛 → 出生空岛
+    loadScene('spawn');
+    const sx = P.x;
+    P.y = SC.killY + 60;
+    NR.step(3);
+    R.spawnFallScene = G.scene;
+    R.spawnFallHome = Math.abs(P.x - sx) < 4;
+
+    // 空岛 → 中枢 → 世界岛 → 挑战 → 回世界岛
+    loadScene('spawn');
+    let sp = SC.spots.find(s => s.kind === 'hub5');
+    NR.tp(sp.x - 6, sp.y - 24);
+    NR.step(2);
+    R.nearPortal = !!nearSpot;
+    tryUse();
+    R.afterPortal = G.scene;
+    sp = SC.spots.find(s => s.kind === 'world' && s.i === 2);
+    NR.tp(sp.x - 6, sp.y - 24);
+    NR.step(2);
+    tryUse();
+    R.afterWorld = G.scene;
+    R.worldIdx = G.world;
+    sp = SC.spots.find(s => s.kind === 'challenge');
+    NR.tp(sp.x - 6, sp.y - 24);
+    NR.step(2);
+    R.nearChal = nearSpot ? nearSpot.label : null;
+    tryUse();
+    R.afterChal = G.scene;
+    R.chalIdx = G.chal;
+
+    // 商店
+    loadScene('spawn');
+    G.coins = 900;
+    openShop('cyber');
+    R.shopOpen = !!G.shopOpen;
+    buyItem(SHOPS.find(s => s.id === 'cyber'), 'dj');
+    R.bought = G.up.dj;
+    R.coinsLeft = G.coins;
+    closeShop();
+    R.shopClosed = !G.shopOpen;
+
+    // 新店铺能不能开
+    const opened = [];
+    for (const s of SHOPS) { openShop(s.id); if (G.shopOpen === s.id) opened.push(s.id); closeShop(); }
+    R.shopsOk = opened.length;
+
+    // 二段跳
+    loadScene('challenge', 0, 0);
+    NR.step(3);
+    P.y = 200; P.vy = 0; P.onGround = true; P.jumps = 0;
+    input.jp = 1; input.jh = 1;
+    for (let i = 0; i < 20; i++) updatePlay(1 / 60);
+    const v1 = P.vy;
+    input.jp = 1;
+    for (let i = 0; i < 8; i++) updatePlay(1 / 60);
+    R.doubleJump = P.vy < v1;
+
+    // 双层地形
+    loadScene('spawn');
+    R.terraces = SC.platforms.filter(p => p.terrace).length;
+    R.steps = SC.platforms.filter(p => p.step).length;
+    R.upBuildings = SC.buildings.filter(b => b.lvl).length;
+    R.upShops = SC.spots.filter(s => s.lvl && s.kind === 'shop').length;
+    const t0 = SC.platforms.find(p => p.terrace);
+    if (t0) {
+      NR.tp(t0.x + 40, t0.y + 30);
+      P.vy = -520; P.onGround = false; P.jumps = 0;
+      let land = false;
+      for (let i = 0; i < 80; i++) { updatePlay(1 / 60); if (P.onGround) { land = true; break; } }
+      R.terraceJumpThrough = land && Math.abs((P.y + P.h) - t0.y) < 3;
+      R.terraceY = t0.y;
+      // 站在步道上不掉下去
+      NR.step(30);
+      R.standOnTerrace = P.onGround && Math.abs((P.y + P.h) - t0.y) < 3;
+    }
+
+    R.hudPills = document.querySelectorAll('#topbar .pill').length;
+    R.hudTimer = !!document.getElementById('timer');
+    R.chipsText = document.getElementById('chips').textContent;
+
+    // 限时效果 + 穿过柜台 + 商品数量
+    loadScene('spawn');
+    enterShop('store');
+    R.roomW = SC.roomW;
+    R.items = SHOPS.find(s => s.id === 'store').items.length;
+    G.buffs = []; G.coins = 999; G.owned = {}; G.up.spd = 0;
+    const shopS = SHOPS.find(s => s.id === 'store');
+    buyItem(shopS, 'drink');
+    R.buffCount = (G.buffs || []).length;
+    R.buffSpd = G.up.spd;
+    R.buffT = Math.round(G.buffs[0].t);
+    G.buffs[0].t = 10;
+    buyItem(shopS, 'drink');
+    R.buffRefresh = Math.round(G.buffs[0].t);
+    for (let i = 0; i < 70; i++) updateBuffs(1);
+    R.buffExpired = (G.buffs || []).length;
+    R.spdAfterExpire = G.up.spd;
+    R.permItemPrice = SHOPS.find(s => s.id === 'cyber').items[0].price;
+    const cxs = SC.counter.x + 70;
+    NR.tp(cxs, 300 - P.h);
+    NR.step(4);
+    R.pastCounterX = Math.round(P.x);
+    R.canPassCounter = Math.abs(P.x - cxs) < 6;
+    exitShop();
+
+    // 全屏
+    R.fsBtn = !!document.getElementById('fsBtn');
+    R.fsBox = (() => {
+      const b = document.getElementById('fsBtn');
+      if (!b) return 'none';
+      const chain = [];
+      let el = b;
+      while (el && el.id !== 'stage' && chain.length < 6) {
+        const r0 = el.getBoundingClientRect();
+        chain.push((el.id || el.tagName) + '(' + Math.round(r0.left) + ',' + Math.round(r0.top) + ',' + Math.round(r0.width) + ',' + Math.round(r0.height) + ')');
+        el = el.parentElement;
+      }
+      if (el) { const r2 = el.getBoundingClientRect(); chain.push('stage(' + Math.round(r2.left) + ',' + Math.round(r2.top) + ',' + Math.round(r2.width) + ',' + Math.round(r2.height) + ')'); }
+      return chain.join(' < ');
+    })();
+    R.uiScaled = getComputedStyle(document.getElementById('hud')).transform !== 'none';
+    R.stageScale = document.getElementById('stage').style.getPropertyValue('--s') || '(unset)';
+    R.furnKinds = Object.keys(FURN).map(k => k + ':' + FURN[k].length).join(',');
+
+    // 室内场景（10 家店全都要能走进去）
+    R.insideShops = [];
+    R.renderOk = 0; R.renderErr = '';
+    for (const sh of SHOPS) {
+      loadScene('spawn');
+      enterShop(sh.id);
+      try { renderInside(SC, 0.4); R.renderOk++; } catch (e) { R.renderErr = R.renderErr || (sh.id + ':' + e.message); }
+      R.insideShops.push(SC.kind + ':' + sh.id + ':' + SC.stands.length + '/' + sh.items.length + ':' + Math.round(SC.roomW) + ':' + ((FURN[sh.id] || []).length));
+      exitShop();
+    }
+    R.insideCount = R.insideShops.filter(s => s.indexOf('inside:') === 0).length;
+    R.insideStandsOk = R.insideShops.every(s => {
+      const p = s.split(':');
+      const q = p[2].split('/');
+      return q[0] === q[1];
+    });
+
+    // 进门 → 走动 → 撞墙 → 展台买 → 柜台面板 → 出门
+    loadScene('spawn');
+    const doorShop = SC.spots.find(s => s.kind === 'shop');
+    NR.tp(doorShop.x, 250 - P.h);
+    NR.step(2);
+    R.doorNear = nearSpot ? nearSpot.kind : null;
+    enterShop(doorShop.id);
+    R.insideKind = SC.kind;
+    R.insideSpots = SC.spots.map(s => s.kind).join(',');
+    R.insideSpawnX = Math.round(P.x);
+    NR.step(20);
+    R.insideGround = P.onGround;
+    input.r = 1; NR.step(400); input.r = 0;
+    R.insideRightX = Math.round(P.x);
+    R.insideRightOk = P.x + P.w <= SC.roomW + 1;
+    R.pastCounter = P.x + P.w > SC.counter.x + 8;
+    input.l = 1; NR.step(200); input.l = 0;
+    R.insideLeftX = Math.round(P.x);
+    R.insideLeftOk = P.x >= -1;
+
+    G.coins = 500; G.owned = {};
+    const st = SC.spots.find(s => s.kind === 'buyStand');
+    NR.tp(st.x, 300 - P.h); NR.step(2);
+    R.nearStand = nearSpot ? nearSpot.kind : null;
+    const itemId = SC.stands[st.i].item.id;
+    tryUse();
+    R.standBuy = (G.owned[itemId] || 0) === 1;
+
+    const dk = SC.spots.find(s => s.kind === 'buyDesk');
+    NR.tp(dk.x, 300 - P.h); NR.step(2);
+    R.nearDesk = nearSpot ? nearSpot.kind : null;
+    tryUse();
+    R.deskPanel = !!G.shopOpen;
+    R.deskRows = document.querySelectorAll('#shopList .buy').length;
+    const buyBtn = document.querySelector('#shopList .buy:not([disabled])');
+    const coinBefore = G.coins;
+    if (buyBtn) buyBtn.click();
+    R.panelBuy = buyBtn ? G.coins < coinBefore : false;
+    closeShop();
+    R.afterPanelKind = SC.kind;
+
+    const lv = SC.spots.find(s => s.kind === 'leave');
+    NR.tp(lv.x, 300 - P.h); NR.step(2);
+    R.nearLeave = nearSpot ? nearSpot.kind : null;
+    tryUse();
+    R.backKind = SC.kind;
+    R.backAtDoor = Math.abs(P.x - doorShop.x) < 40;
+
+    // 世界岛上的店：进出要回到那个世界
+    loadScene('world', 2);
+    const wShop = SC.spots.find(s => s.kind === 'shop');
+    NR.tp(wShop.x, 250 - P.h); NR.step(2);
+    enterShop(wShop.id);
+    exitShop();
+    R.worldShopBack = SC.kind + '#' + G.world;
+    R.worldShopX = Math.round(P.x - wShop.x);
+
+    // 电梯不能跟着玩家跳（旧 bug：P.y < 200 就把轿厢画到上层）
+    loadScene('spawn');
+    const lfJ = SC.spots.find(s => s.kind === 'lift' && !s.lvl);
+    NR.tp(lfJ.x, 232);
+    NR.step(8);
+    render(0.016, 1.0);
+    const carY0 = lfJ.carY;
+    R.liftCarStart = !!lfJ.car;
+    input.jp = 1; input.jh = 1;
+    NR.step(3);
+    input.jp = 0;
+    NR.step(14);
+    render(0.016, 1.0);
+    R.jumpFeetY = Math.round(P.y + P.h);
+    R.jumpAirborne = (P.y + P.h) < 220;
+    R.liftCarDuringJump = !!lfJ.car;
+    R.liftCarYStart = Math.round(carY0);
+    R.liftCarYDuringJump = Math.round(lfJ.carY);
+    R.liftCarStays = Math.abs(lfJ.carY - carY0) < 2;
+    input.jh = 0;
+    NR.step(40);
+    // 上到二层后轿厢才应该在上面
+    const lfUp = SC.spots.find(s => s.kind === 'lift' && s.lvl);
+    NR.tp(lfUp.x, 150 - P.h); NR.step(2);
+    tryUse();
+    gotoFloor(SC.floors[1]);
+    NR.step(4);
+    R.liftCarAt2F = !!lfJ.car;
+
+    // 电梯
+    loadScene('spawn');
+    R.liftSpots = SC.spots.filter(s => s.kind === 'lift').length;
+    R.floors = SC.floors.length;
+    const lf = SC.spots.find(s => s.kind === 'lift' && !s.lvl);
+    NR.tp(lf.x, 250 - P.h);
+    NR.step(2);
+    R.nearLift = nearSpot ? nearSpot.kind : null;
+    tryUse();
+    R.liftOpen = !!G.liftOpen;
+    R.liftBtns = document.querySelectorAll('#liftBtns .fbtn').length;
+    gotoFloor(SC.floors[1]);
+    NR.step(12);
+    R.afterFloor2 = Math.round(P.y + P.h);
+    R.standUpstairs = Math.abs((P.y + P.h) - 150) < 3;
+    const lf2 = SC.spots.find(s => s.kind === 'lift' && s.lvl);
+    NR.tp(lf2.x, 150 - P.h);
+    NR.step(2);
+    R.nearLiftUp = nearSpot ? nearSpot.kind : null;
+    tryUse();
+    R.liftOpenUp = !!G.liftOpen;
+    gotoFloor(SC.floors[0]);
+    NR.step(12);
+    R.afterFloor1 = Math.round(P.y + P.h);
+
+    // 店内景
+    G.coins = 300;
+    openShop('cafe');
+    const art = document.getElementById('shopArt');
+    let nz = 0;
+    if (art) {
+      const d = art.getContext('2d').getImageData(0, 0, art.width, art.height).data;
+      for (let i = 3; i < d.length; i += 4) if (d[i]) nz++;
+    }
+    R.shopArtPixels = nz;
+    closeShop();
+
+    document.title = 'PROBE ' + JSON.stringify(R);
+  }
+
+  function runShot() {
+    const NR = api();
+    playMode();
+    const s = params.get('shot');
+    const W = (x, y) => { NR.tp(x, y); };
+    if (s === 'spawn') {
+      loadScene('spawn'); W(560, 220);
+    } else if (s === 'spawn2') {
+      loadScene('spawn');
+      const shop = SC.spots.filter(v => v.kind === 'shop')[6];
+      W(shop.x - 70, 220);
+    } else if (s === 'up') {
+      loadScene('spawn');
+      const t0 = SC.platforms.find(p => p.terrace);
+      W(t0.x + 110, t0.y - 24);
+    } else if (s === 'lift') {
+      loadScene('spawn');
+      const lf = SC.spots.find(v => v.kind === 'lift' && !v.lvl);
+      W(lf.x + 30, 232);
+      openLift(lf);
+    } else if (s === 'insfurn' || s === 'insramen') {
+      loadScene('spawn');
+      enterShop(s === 'insfurn' ? 'store' : 'ramen');
+      NR.tp(358, 300 - P.h);
+      NR.step(20);
+      NR.snapCam();
+    } else if (s && s.indexOf('inshop') === 0) {
+      const ids = ['store', 'cloth', 'ramen', 'arcade', 'cyber'];
+      const idx = Math.min(4, Math.max(0, parseInt(s.slice(6) || '0', 10) || 0));
+      loadScene('spawn');
+      enterShop(ids[idx]);
+      NR.tp(560, 300 - P.h);
+      NR.step(24);
+      NR.snapCam();
+    } else if (s === 'liftjump') {
+      loadScene('spawn');
+      const lfJ = SC.spots.find(v => v.kind === 'lift' && !v.lvl);
+      NR.tp(lfJ.x, 232);
+      NR.step(8);
+      input.jp = 1; input.jh = 1;
+      NR.step(3);
+      input.jp = 0;
+      NR.step(12);
+      NR.snapCam();
+      G.paused = true;
+    } else if (s === 'inscounter') {
+      loadScene('spawn');
+      enterShop('store');
+      NR.tp(SC.counter.x + 70, 300 - P.h);
+      NR.step(20);
+      NR.snapCam();
+    } else if (s === 'insbuff') {
+      loadScene('spawn');
+      enterShop('store');
+      G.coins = 999; G.buffs = []; G.owned = {}; G.up.spd = 0;
+      const sh = SHOPS.find(v => v.id === 'store');
+      buyItem(sh, 'drink');
+      buyItem(sh, 'torch');
+      NR.tp(760, 300 - P.h);
+      NR.step(24);
+      NR.snapCam();
+    } else if (s === 'insdesk') {
+      loadScene('spawn');
+      enterShop('store');
+      NR.tp(600, 300 - P.h);
+      NR.step(24);
+      NR.snapCam();
+      openShop('store');
+    } else if (s === 'hub') {
+      loadScene('hub5'); W(380, 220);
+    } else if (s === 'world') {
+      loadScene('world', 0);
+      const p = SC.spots.filter(v => v.kind === 'challenge')[1];
+      W(p.x - 90, 220);
+    } else if (s === 'worldwide') {
+      loadScene('world', 3);
+      const p = SC.spots.filter(v => v.kind === 'challenge')[0];
+      W(p.x - 40, 220);
+    } else if (/^w[1-5]$/.test(s)) {
+      const i = parseInt(s.slice(1), 10) - 1;
+      loadScene('world', i);
+      const p = SC.spots.filter(v => v.kind === 'challenge')[0];
+      W(p.x - 60, 220);
+    } else if (s === 'chal') {
+      loadScene('challenge', 0, 0);
+      const p = SC.platforms[6];
+      W(p.x + 18, p.y - 24);
+    } else if (s === 'shop') {
+      loadScene('spawn'); W(250, 220);
+      openShop('ramen');
+    } else if (s === 'shopitems') {
+      loadScene('spawn'); W(130, 220);
+      openShop('arcade');
+    } else if (s === 'shopcafe') {
+      loadScene('spawn');
+      const sp2 = SC.spots.find(v => v.id === 'cafe');
+      W(sp2.x - 40, 220);
+    }
+    NR.snapCam();
+  }
+
+  function go() {
+    if (params.has('probe')) runProbe();
+    else runShot();
+  }
+
+  if (document.readyState === 'complete') setTimeout(go, 40);
+  else window.addEventListener('load', () => setTimeout(go, 40));
+})();
+
+</script>
+</body>
+</html>

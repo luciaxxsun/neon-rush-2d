@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>霓虹狂奔 2D · NEON RUSH — 像素跑酷</title>
+<style>
+  :root{
+    --bg:#05060c; --panel:#12141f; --panel2:#181e30; --line:#2c3a52; --line2:#45597a;
+    --txt:#e6eeff; --dim:#7d8cab; --cy:#22e0ff; --mg:#ff3ea5; --or:#ffcf4d; --gr:#5dff9b;
+  }
+  *{box-sizing:border-box;border-radius:0!important;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--txt);
+    font-family:"Courier New",Consolas,"Microsoft YaHei",monospace;-webkit-font-smoothing:none}
+  body{background-image:
+      repeating-linear-gradient(0deg,rgba(34,224,255,.04) 0 1px,transparent 1px 4px),
+      radial-gradient(120% 80% at 50% 0%,#141a2e 0%,#05060c 62%);
+    min-height:100vh;padding:24px 16px 56px}
+  .wrap{max-width:1060px;margin:0 auto}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    border:3px solid var(--line);background:var(--panel);box-shadow:5px 5px 0 #000;padding:10px 14px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:12px;letter-spacing:3px;color:var(--dim)}
+  .dot{width:10px;height:10px;background:var(--mg);box-shadow:0 0 0 2px #000,0 0 12px var(--mg)}
+  .nav a{color:var(--dim);text-decoration:none;font-size:12px;letter-spacing:2px;margin-left:16px}
+  .nav a:hover{color:var(--cy)}
+
+  .hero{margin-top:20px;display:grid;grid-template-columns:1fr 1.02fr;gap:16px}
+  @media(max-width:820px){.hero{grid-template-columns:1fr}}
+  .heroCard{border:3px solid var(--line2);background:linear-gradient(180deg,#101427,#0a0b13);
+    box-shadow:7px 7px 0 #000;padding:24px 22px}
+  h1{font-size:clamp(26px,4.4vw,42px);line-height:1.05;letter-spacing:3px;color:#fff;
+    text-shadow:3px 3px 0 #000,6px 6px 0 rgba(255,62,165,.5),0 0 22px rgba(34,224,255,.4)}
+  h1 span{display:block;font-size:calc(1em*.4);letter-spacing:10px;color:var(--cy);margin-top:6px;
+    text-shadow:2px 2px 0 #000,0 0 16px rgba(34,224,255,.6)}
+  .sub{margin-top:14px;color:var(--dim);font-size:12.5px;line-height:1.95}
+  .tags{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+  .tag{font-size:10.5px;letter-spacing:1.5px;padding:4px 8px;border:2px solid var(--line);color:var(--dim);background:#0e1220}
+  .tag.c{border-color:#0d5f70;color:var(--cy)}
+  .tag.m{border-color:#7a1d4d;color:var(--mg)}
+  .tag.o{border-color:#7a5a18;color:var(--or)}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:18px}
+  .st{border:2px solid var(--line);background:#0c0f1b;padding:8px 4px;text-align:center;box-shadow:3px 3px 0 #000}
+  .st b{display:block;font-size:18px;color:var(--cy);text-shadow:2px 2px 0 #000}
+  .st span{font-size:10px;color:var(--dim)}
+
+  .playBox{display:flex;flex-direction:column;gap:10px}
+  .shot{border:3px solid var(--line2);box-shadow:6px 6px 0 #000;background:#000;position:relative;overflow:hidden}
+  .shot img{display:block;width:100%;image-rendering:pixelated}
+  .shot .cap{position:absolute;left:0;bottom:0;background:#000c;color:var(--cy);
+    font-size:10px;letter-spacing:2px;padding:3px 8px;border-top:2px solid var(--line2)}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none;
+    font:700 15px/1 "Courier New",monospace;letter-spacing:5px;color:#03141b;background:var(--cy);
+    padding:15px 20px;box-shadow:inset -4px -4px 0 rgba(0,0,0,.32),inset 4px 4px 0 rgba(255,255,255,.55),6px 6px 0 #000}
+  .btn:hover{background:#5cf0ff}
+  .btn:active{transform:translate(3px,3px);box-shadow:inset -4px -4px 0 rgba(0,0,0,.32),inset 4px 4px 0 rgba(255,255,255,.55),3px 3px 0 #000}
+  .btn.ghost{background:var(--panel2);color:var(--txt);border:3px solid var(--line2);font-size:12px;letter-spacing:3px;
+    box-shadow:inset -3px -3px 0 rgba(0,0,0,.5),inset 3px 3px 0 rgba(255,255,255,.08),5px 5px 0 #000}
+  .btn.ghost:hover{border-color:var(--cy);color:var(--cy)}
+
+  .sec{margin-top:30px}
+  .secT{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:4px;color:var(--cy);margin-bottom:10px}
+  .secT i{display:block;width:11px;height:11px;background:var(--cy);box-shadow:0 0 0 2px #000,0 0 10px var(--cy)}
+  .secT small{color:var(--dim);letter-spacing:2px;font-size:10px}
+
+  .grid{display:grid;gap:12px}
+  .g5{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .card{border:3px solid var(--line);background:var(--panel);box-shadow:5px 5px 0 #000}
+  .card .hd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;
+    border-bottom:3px solid var(--line);background:#0e1220;font-size:12px;letter-spacing:2px;color:#fff}
+  .card .hd em{font-style:normal;font-size:9px;color:#06121a;background:var(--mg);padding:2px 5px;letter-spacing:1px}
+  .card .bd{padding:9px 10px;font-size:11.5px;color:var(--dim);line-height:1.85}
+  .card .bd b{color:var(--cy)}
+  .kb{font-family:"Courier New",monospace;font-size:11px;color:var(--or);border:2px solid #6b4a10;
+    background:#191203;padding:3px 8px;box-shadow:2px 2px 0 #000;display:inline-block;margin-bottom:6px}
+
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
+  .node{border:2px solid var(--line2);background:#0e1220;padding:7px 11px;box-shadow:3px 3px 0 #000;font-size:11px;letter-spacing:1px}
+  .node.hot{border-color:#7a1d4d;color:var(--mg)}
+  .arw{color:var(--cy);font-size:14px}
+
+  .foot{margin-top:34px;border-top:3px solid var(--line);padding-top:14px;display:flex;flex-wrap:wrap;
+    gap:10px;justify-content:space-between;font-size:10.5px;color:#5c6a85;letter-spacing:1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand"><span class="dot"></span>NEON RUSH 2D / 霓虹狂奔</div>
+    <div class="nav">
+      <a href="#keys">操作</a>
+      <a href="#map">流程</a>
+      <a href="#shops">小店</a>
+      <a href="#gal">截图</a>
+      <a href="game.html">开始游戏</a>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="heroCard">
+      <h1>霓虹狂奔<span>NEON RUSH 2D</span></h1>
+      <div class="sub">
+        纯 2D 像素横版跑酷。十家小店都能走进去：店内可以自由走动，展台前按 E 直接买，柜台前按 E 开面板点着买。<br>
+        街区是上下两层的空岛：下层是十家小店、居民楼和工厂，<br>
+        上层是高架步道和一排建筑，在电梯门口按 E 选楼层上去。中间一道传送门通向浮空中枢；<br>
+        中枢五个传送门，各自通往一个世界岛——每个岛也是两层，还有 5~9 个跑酷挑战门。
+      </div>
+      <div class="tags">
+        <span class="tag c">平面 2D</span>
+        <span class="tag m">像素风</span>
+        <span class="tag o">跑酷 + 传送门</span>
+        <span class="tag">10 家小店</span>
+        <span class="tag">上下两层地形</span>
+        <span class="tag c">10 个可走动的室内场景</span>
+        <span class="tag m">全屏模式（F 键）</span>
+        <span class="tag">店内陈设：货架 · 餐桌椅</span>
+        <span class="tag">5 个世界 · 35 个挑战</span>
+      </div>
+      <div class="stats">
+        <div class="st"><b>5</b><span>世界</span></div>
+        <div class="st"><b>35</b><span>跑酷挑战</span></div>
+        <div class="st"><b>10</b><span>可进小店</span></div>
+        <div class="st"><b>∞</b><span>芯片</span></div>
+      </div>
+    </div>
+
+    <div class="playBox">
+      <div class="shot">
+        <img src="shots/spawn.png" alt="出生空岛">
+        <div class="cap">出生空岛 · 十家小店、居民楼与中央传送门</div>
+      </div>
+      <a class="btn" href="game.html">▶ 开 始 奔 跑</a>
+      <a class="btn ghost" href="霓虹狂奔2D.html">下载单文件版（离线双击即玩）</a>
+    </div>
+  </div>
+
+  <div class="sec" id="keys">
+    <div class="secT"><i></i>操 作 <small>CONTROLS</small></div>
+    <div class="grid g5">
+      <div class="card"><div class="bd"><span class="kb">A / D</span><br>左右移动，走到门前后按 E</div></div>
+      <div class="card"><div class="bd"><span class="kb">SPACE</span><br>跳跃，长按跳得更高</div></div>
+      <div class="card"><div class="bd"><span class="kb">E</span><br>进传送门 / 进店门 / 出店</div></div>
+      <div class="card"><div class="bd"><span class="kb">SHIFT</span><br>冲刺（在唱片行买靴子后）</div></div>
+      <div class="card"><div class="bd"><span class="kb">ESC</span><br>暂停 / 关闭商店面板</div></div>
+    </div>
+  </div>
+
+  <div class="sec" id="map">
+    <div class="secT"><i></i>流 程 <small>WORLD MAP</small></div>
+    <div class="flow">
+      <span class="node">出生空岛</span><span class="arw">→</span>
+      <span class="node hot">中央传送门</span><span class="arw">→</span>
+      <span class="node">浮空中枢（5 个门）</span><span class="arw">→</span>
+      <span class="node">世界岛 1~5</span><span class="arw">→</span>
+      <span class="node">5~9 个挑战门</span><span class="arw">→</span>
+      <span class="node hot">跑酷挑战</span><span class="arw">↩</span>
+      <span class="node">回世界岛</span>
+    </div>
+    <div class="grid g3" style="margin-top:12px">
+      <div class="card">
+        <div class="hd">跑酷挑战 <em>TASK</em></div>
+        <div class="bd">每个世界岛上有 <b>5~9 个挑战门</b>，进门就是一段平台关，里面有 3~5 个任务旗。碰到旗子 <b>芯片 +5、金币 +20</b>，全清再 <b>+15</b>。芯片<b>没有上限</b>。</div>
+      </div>
+      <div class="card">
+        <div class="hd">掉下去 <em>FALL</em></div>
+        <div class="bd">挑战里踩空 → <b>回到出发的那个世界岛</b>；在世界岛边缘掉下去 → <b>回到这座岛</b>。<br>只有在出生空岛掉落，才会重生回出生空岛。金币和芯片都不会丢。</div>
+      </div>
+      <div class="card">
+        <div class="hd">赚钱 <em>COINS</em></div>
+        <div class="bd">路上撒着金币（空中弧线上更多）。攒够了去小店买<b>二段跳、冲刺靴、强化跟腱</b>，后面的世界会轻松很多。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" id="shops">
+    <div class="secT"><i></i>十 家 小 店 <small>SHOPS</small></div>
+    <div class="grid g3">
+      <div class="card"><div class="hd">24H 便利店 <em>STORE</em></div><div class="bd">店长 小七。卖 <b>能量饮</b>（+速度）和<b>备用电池</b>（冲刺冷却更短）。</div></div>
+      <div class="card"><div class="hd">义体诊所 <em>CYBER</em></div><div class="bd">店长 阿玲。卖 <b>二段跳义体</b> 和 <b>强化跟腱</b>。</div></div>
+      <div class="card"><div class="hd">樱拉面 <em>RAMEN</em></div><div class="bd">老板娘守着一锅汤。一碗 <b>赤汤拉面</b> 永久 +8 速度。</div></div>
+      <div class="card"><div class="hd">唱片行 <em>MUSIC</em></div><div class="bd">DJ 阿飞。卖 <b>冲刺靴</b>，Shift 冲刺。</div></div>
+      <div class="card"><div class="hd">霓裳 <em>CLOTH</em></div><div class="bd">裁缝。三件外套配色，纯好看，30 金币一件。</div></div>
+      <div class="card"><div class="hd">芯片兑换 <em>BANK</em></div><div class="bd">柜员。卖 <b>芯片探测器</b>，未完成的任务点亮起光柱。</div></div>
+      <div class="card"><div class="hd">咖啡站 <em>CAFE</em></div><div class="bd">店长 阿库。<b>黑咖啡</b> +速度、<b>双份浓缩</b> +跳跃，一杯提神。</div></div>
+      <div class="card"><div class="hd">花店 <em>FLOWER</em></div><div class="bd">店长 小满。<b>幸运草</b>让每枚金币多收 1 枚，还有干花外套。</div></div>
+      <div class="card"><div class="hd">五金铺 <em>TOOL</em></div><div class="bd">老周。卖 <b>加固靴</b>（冲刺冷却更短）和 <b>防滑鞋底</b>（空中好控制）。</div></div>
+      <div class="card"><div class="hd">街机厅 <em>ARCADE</em></div><div class="bd">小马。<b>连击徽章</b> 让每个任务多拿 2 枚芯片。</div></div>
+    </div>
+  </div>
+
+  <div class="sec" id="gal">
+    <div class="secT"><i></i>画 面 <small>SCREENS</small></div>
+    <div class="grid g3">
+      <div class="shot"><img src="shots/hub.png" alt="中枢"><div class="cap">浮空中枢 · 五个传送门</div></div>
+      <div class="shot"><img src="shots/world.png" alt="世界"><div class="cap">世界 1 · 霓虹街区</div></div>
+      <div class="shot"><img src="shots/shop.png" alt="商店"><div class="cap">进店 · 樱拉面</div></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div>霓虹狂奔 2D · NEON RUSH — 纯 canvas 像素跑酷 · 单文件 · 不需要联网</div>
+    <div>A/D 移动 · SPACE 跳跃 · E 进出传送门和小店 · SHIFT 冲刺</div>
+  </div>
+
+</div>
+</body>
+</html>

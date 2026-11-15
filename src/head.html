@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>霓虹狂奔 2D · NEON RUSH</title>
+<style>
+  :root{
+    --panel:#12141f; --panel2:#181e30; --line:#2c3a52; --line2:#45597a;
+    --txt:#e6eeff; --dim:#7d8cab; --cy:#22e0ff; --mg:#ff3ea5; --or:#ffcf4d; --gr:#5dff9b;
+  }
+  *{box-sizing:border-box;border-radius:0!important;margin:0;padding:0}
+  html,body{height:100%;background:#04060c;color:var(--txt);overflow:hidden;
+    font-family:"Courier New",Consolas,"Microsoft YaHei",monospace;
+    -webkit-font-smoothing:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  body{display:grid;place-items:center;
+    background-image:repeating-linear-gradient(0deg,rgba(34,224,255,.03) 0 1px,transparent 1px 4px)}
+  #stage{position:relative;width:640px;height:360px;--s:1;box-shadow:0 0 0 2px #10182a,0 0 70px rgba(34,224,255,.10)}
+  canvas#c{display:block;image-rendering:pixelated;image-rendering:crisp-edges;background:#04060c}
+  #scan{position:absolute;left:0;top:0;width:640px;height:360px;transform-origin:0 0;transform:scale(var(--s));
+    pointer-events:none;z-index:5;opacity:.35;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.5) 0 1px,rgba(0,0,0,0) 1px 3px)}
+
+  /* ---------- HUD ---------- */
+  #hud{position:absolute;left:0;top:0;width:640px;height:360px;transform-origin:0 0;transform:scale(var(--s));
+    z-index:4;pointer-events:none}
+  #topbar{position:absolute;top:10px;left:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 120px)}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:#0d1220ee;
+    border:2px solid var(--line);box-shadow:3px 3px 0 #000;font-size:12px;letter-spacing:1px;color:var(--dim)}
+  .pill b{color:#fff;font-size:13px;letter-spacing:1px}
+  .pill .k{font-size:10px;color:var(--dim);letter-spacing:2px}
+  .pill.coin{border-color:#7a5a18} .pill.coin b{color:var(--or)}
+  .pill.chip{border-color:#0d5f70} .pill.chip b{color:var(--cy)}
+  #topRight{position:absolute;left:0;top:0;width:640px;height:360px;transform-origin:0 0;transform:scale(var(--s));
+    pointer-events:none;z-index:9}
+  #topRight .tbtn{position:absolute;top:8px;bottom:auto;display:block;height:auto;white-space:nowrap;
+    pointer-events:auto;cursor:pointer;padding:5px 0;line-height:1.6;
+    width:62px;text-align:center;background:#0d1220ee;border:2px solid var(--line);box-shadow:3px 3px 0 #000;
+    font-size:11px;letter-spacing:1px;color:var(--dim)}
+  #fsBtn{right:78px}
+  #muteBtn{right:8px}
+  #topRight .tbtn:hover{color:var(--cy);border-color:var(--cy)}
+  #muteBtn.off{color:var(--mg);border-color:#7a1d4d}
+
+  #prompt{position:absolute;left:50%;bottom:26px;transform:translateX(-50%) translateY(6px);
+    padding:7px 16px;background:#0d1220f2;border:2px solid var(--cy);box-shadow:4px 4px 0 #000;
+    font-size:12px;letter-spacing:1px;color:var(--cy);opacity:0;transition:opacity .14s,transform .14s;white-space:nowrap}
+  #prompt.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  #prompt:before{content:"▸ ";color:var(--mg)}
+
+  #toast{position:absolute;left:50%;top:56px;transform:translateX(-50%) translateY(-8px);
+    padding:7px 18px;background:#1a0d1af2;border:2px solid var(--mg);box-shadow:4px 4px 0 #000;
+    font-size:12px;letter-spacing:1px;color:#ffd9ec;opacity:0;transition:opacity .18s,transform .18s;white-space:nowrap}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---------- 覆盖层 ---------- */
+  .ov{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;
+    background:#04060ceb;padding:14px}
+  .ov.on{display:flex}
+  .card{background:var(--panel);border:3px solid var(--line2);box-shadow:7px 7px 0 #000;padding:16px 18px;max-width:520px;width:100%}
+  .card h2{font-size:20px;letter-spacing:3px;color:#fff;text-shadow:2px 2px 0 #000,4px 4px 0 rgba(255,62,165,.5)}
+  .card h2 em{font-style:normal;color:var(--cy);font-size:12px;letter-spacing:5px;display:block;margin-top:3px;
+    text-shadow:2px 2px 0 #000}
+  .card p{font-size:12px;color:var(--dim);line-height:1.9;margin-top:8px}
+
+  .btn{display:block;width:100%;cursor:pointer;font:700 14px/1 "Courier New",monospace;letter-spacing:5px;
+    color:#03141b;background:var(--cy);border:0;padding:12px;
+    box-shadow:inset -4px -4px 0 rgba(0,0,0,.32),inset 4px 4px 0 rgba(255,255,255,.55),5px 5px 0 #000}
+  .btn:hover{background:#5cf0ff}
+  .btn:active{transform:translate(3px,3px);box-shadow:inset -4px -4px 0 rgba(0,0,0,.32),inset 4px 4px 0 rgba(255,255,255,.55),2px 2px 0 #000}
+  .btn.alt{background:var(--panel2);color:var(--txt);border:3px solid var(--line2);
+    box-shadow:inset -3px -3px 0 rgba(0,0,0,.5),inset 3px 3px 0 rgba(255,255,255,.08),4px 4px 0 #000;font-size:12px;letter-spacing:3px}
+
+  .keys{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:12px 0 4px}
+  .krow{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim)}
+  .kb{font-family:"Courier New",monospace;font-size:10px;color:var(--or);border:2px solid #6b4a10;background:#191203;
+    padding:2px 6px;box-shadow:2px 2px 0 #000;letter-spacing:1px;white-space:nowrap}
+
+  /* ---------- 商店 ---------- */
+  .shopCard{background:var(--panel);border:3px solid var(--line2);box-shadow:7px 7px 0 #000;width:100%;max-width:520px}
+  .shopHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;
+    border-bottom:3px solid var(--line);background:#0e1220}
+  .shopHead h3{font-size:15px;letter-spacing:3px;color:#fff}
+  .shopHead .who{font-size:10px;color:var(--mg);letter-spacing:2px}
+  .shopHead .cred{font-size:11px;color:var(--or);letter-spacing:1px}
+  #shopLine{padding:10px 12px 0;font-size:11px;color:var(--dim);line-height:1.7}
+  #shopArt{display:block;width:100%;height:auto;image-rendering:pixelated;
+    border-bottom:3px solid var(--line);background:#080c16}
+
+  /* ---------- 电梯 ---------- */
+  .liftCard{background:var(--panel);border:3px solid var(--line2);box-shadow:7px 7px 0 #000;width:100%;max-width:380px}
+  .liftHead{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;
+    border-bottom:3px solid var(--line);background:#0e1220}
+  .liftHead h3{font-size:15px;letter-spacing:4px;color:#fff}
+  .liftHead .sub{font-size:10px;color:var(--mg);letter-spacing:2px}
+  #liftBtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 14px}
+  .fbtn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;cursor:pointer;
+    background:#131a2c;border:2px solid var(--line);box-shadow:3px 3px 0 #000;color:var(--dim);
+    font-family:inherit;font-size:11px;letter-spacing:1px;transition:all .1s}
+  .fbtn b{font-size:20px;letter-spacing:2px;color:#fff}
+  .fbtn:hover{border-color:var(--cy);color:var(--cy);transform:translate(-1px,-1px);box-shadow:4px 4px 0 #000}
+  .fbtn.now{border-color:var(--or);color:var(--or);opacity:.65;cursor:default}
+  .fbtn.now b{color:var(--or)}
+  .liftFoot{padding:0 14px 14px}
+  .liftFoot .btn{width:100%}
+  .items{padding:10px 12px;display:flex;flex-direction:column;gap:6px;max-height:190px;overflow:auto}
+  .item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px;
+    border:2px solid var(--line);background:#0c101c}
+  .item .it b{display:block;font-size:12px;color:#fff;letter-spacing:1px}
+  .item .it span{font-size:10px;color:var(--dim)}
+  .item .ip{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+  .item .price{font-size:11px;color:var(--or);letter-spacing:1px}
+  .item .buy{cursor:pointer;font:700 11px/1 "Courier New",monospace;letter-spacing:2px;color:#03141b;
+    background:var(--cy);border:0;padding:7px 10px;
+    box-shadow:inset -3px -3px 0 rgba(0,0,0,.3),inset 3px 3px 0 rgba(255,255,255,.5),3px 3px 0 #000}
+  .item .buy:hover{background:#5cf0ff}
+  .item .buy:disabled{background:#2a3448;color:#5c6a85;cursor:default;box-shadow:none}
+  .item.maxed{opacity:.6}
+  .shopFoot{padding:0 12px 12px}
+  #best{font-size:12px;color:var(--dim);line-height:2;margin:10px 0}
+  #best b{color:var(--cy)}
+
+  /* ---------- 触屏 ---------- */
+  #touch{position:absolute;inset:0;z-index:6;display:none}
+  #touch.on{display:block}
+  .tbtn{position:absolute;bottom:16px;display:grid;place-items:center;width:52px;height:52px;
+    background:#0d1220d0;border:2px solid var(--line2);color:var(--txt);font-size:16px;
+    box-shadow:3px 3px 0 #000;pointer-events:auto;touch-action:none}
+  #tLeft{left:12px} #tRight{left:72px} #tJump{right:12px;width:60px;height:60px} #tUse{right:80px;bottom:22px;font-size:12px}
+  #tLeft:active,#tRight:active,#tJump:active,#tUse:active{background:var(--cy);color:#03141b}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div id="scan"></div>
+
+  <div id="hud">
+    <div id="topbar">
+      <div class="pill coin"><span class="k">金币</span><b id="coins">0</b></div>
+      <div class="pill chip"><span class="k">芯片</span><b id="chips">0</b></div>
+      <div class="pill"><span class="k">区域</span><b id="area">出生空岛</b></div>
+    </div>
+    <div id="prompt"></div>
+    <div id="toast"></div>
+  </div>
+  <div id="topRight"><div class="tbtn" id="fsBtn">全屏</div><div class="tbtn" id="muteBtn">音效</div></div>
+
+  <div id="title" class="ov on">
+    <div class="card">
+      <h2>霓虹狂奔<em>N E O N &nbsp; R U S H &nbsp; 2 D</em></h2>
+      <p>十家小店<b>都能走进去</b>：进店后可以在店里自由走动，走到展台前按 <b>E</b> 直接买，走到柜台前按 <b>E</b> 打开商品面板点着买，走到门口按 <b>E</b> 出门。<br>街区是上下两层：下层小店、居民楼和工厂，上层高架步道和另一排建筑，电梯门口按 <b>E</b> 选楼层（有几层就有几个按钮）。<br>中间那道光门通向浮空中枢，中枢的五个传送门各自通往一个世界岛——每个岛也都是两层，有商铺、建筑和 5~9 个跑酷挑战门。</p>
+      <div class="keys">
+        <div class="krow"><span class="kb">A / D</span> 左右移动</div>
+        <div class="krow"><span class="kb">SPACE</span> 跳跃</div>
+        <div class="krow"><span class="kb">E</span> 进传送门 / 进店</div>
+        <div class="krow"><span class="kb">SHIFT</span> 冲刺（买到靴子后）</div>
+        <div class="krow"><span class="kb">F</span> 全屏 / 退出全屏</div>
+      </div>
+      <p>在挑战里掉下去 → 回到出发的那个世界岛；在世界岛掉下去 → 回到岛上。<br>只有在出生空岛掉下去，才会重生回出生空岛。<br>每完成一个任务点芯片 +5，全清再 +15 —— 芯片没有上限。</p>
+      <button class="btn" id="startBtn" style="margin-top:12px">开 始 奔 跑</button>
+    </div>
+  </div>
+
+  <div id="shop" class="ov">
+    <div class="shopCard">
+      <div class="shopHead">
+        <div>
+          <h3 id="shopName">小店</h3>
+          <div class="who">店长 · <span id="shopKeep">—</span></div>
+        </div>
+        <div class="cred">◎ <span id="shopCoins">0</span></div>
+      </div>
+      <canvas id="shopArt" width="480" height="150"></canvas>
+      <div id="shopLine"></div>
+      <div class="items" id="shopList"></div>
+      <div class="shopFoot"><button class="btn alt" id="shopClose">离开（E / ESC）</button></div>
+    </div>
+  </div>
+
+  <div id="lift" class="ov">
+    <div class="liftCard">
+      <div class="liftHead">
+        <h3>电 梯</h3>
+        <div class="sub" id="liftSub">出生空岛</div>
+      </div>
+      <div id="liftBtns"></div>
+      <div class="liftFoot"><button class="btn alt" id="liftClose">离开（E / ESC）</button></div>
+    </div>
+  </div>
+
+  <div id="pause" class="ov">
+    <div class="card">
+      <h2>暂停<em>P A U S E</em></h2>
+      <p>A / D 移动　SPACE 跳跃　E 交互　SHIFT 冲刺　ESC 暂停</p>
+      <button class="btn" id="resumeBtn" style="margin-top:12px">继 续</button>
+    </div>
+  </div>
+
+  <div id="win" class="ov">
+    <div class="card">
+      <h2>全 部 完 成<em>A L L &nbsp; C L E A R</em></h2>
+      <div id="best"></div>
+      <button class="btn" id="againBtn">再 跑 一 次</button>
+    </div>
+  </div>
+
+  <div id="touch">
+    <div class="tbtn" id="tLeft">◀</div>
+    <div class="tbtn" id="tRight">▶</div>
+    <div class="tbtn" id="tJump">跳</div>
+    <div class="tbtn" id="tUse">E</div>
+  </div>
+</div>
+<script>
