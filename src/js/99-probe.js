@@ -239,6 +239,9 @@
     R.sfxList = (typeof SFX_DATA !== 'undefined') ? Object.keys(SFX_DATA).map(k => k + 'x' + SFX_DATA[k].length).join(',') : 'none';
     R.sfxKb = (typeof SFX_DATA !== 'undefined') ? Math.round(Object.keys(SFX_DATA).reduce((s, k) => s + SFX_DATA[k].join('').length, 0) / 1024) : 0;
     R.sfxApi = ['coin', 'jump', 'land', 'task', 'door', 'fall', 'buy', 'portal', 'chip', 'select'].filter(k => typeof SFX[k] === 'function').length;
+    R.bgmKb = (typeof BGM_DATA !== 'undefined') ? Math.round(BGM_DATA.length / 1024) : 0;
+    R.bgmApi = ['bgmToggle', 'bgmStart', 'isBgmOn'].filter(k => typeof SFX[k] === 'function').length;
+    R.bgmBtn = !!document.getElementById('bgmBtn');
 
     // 全屏
     R.fsBtn = !!document.getElementById('fsBtn');

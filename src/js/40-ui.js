@@ -307,6 +307,12 @@ function uiBind() {
     mb.textContent = m ? '静音' : '音效';
     mb.classList.toggle('off', m);
   });
+  const bb = document.getElementById('bgmBtn');
+  if (bb) bb.addEventListener('click', () => {
+    const on = SFX.bgmToggle();
+    bb.textContent = on ? '音乐' : '无音乐';
+    bb.classList.toggle('off', !on);
+  });
 
   addEventListener('nr-esc', () => {
     if (G.shopOpen) closeShop();

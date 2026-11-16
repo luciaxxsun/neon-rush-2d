@@ -115,10 +115,12 @@ function sync() {
   input.r = (keys.KeyD || keys.ArrowRight) ? 1 : 0;
 }
 
-/* ---------- 音效：forge_sfx 生成的 MP3（base64 内嵌），解码失败退回振荡器 ---------- */
+/* ---------- 音效 / 背景音乐：forge_sfx + forge_music 生成，base64 内嵌 ---------- */
 const SFX = (() => {
-  let ac = null, muted = false, loading = false;
+  let ac = null, muted = false, bgmOn = true, loading = false, bgmNode = null, bgmBuf = null;
   const buf = {};
+  const last = {};          // 每种音效最近一次触发的时刻
+  const MIN_GAP = 0.09;     // 同一种音效 90ms 内不重复，防止连点叠成一串电流声
 
   function ensure() {
     if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = null; } }
@@ -131,7 +133,6 @@ const SFX = (() => {
     return u8.buffer;
   }
 
-  // 解码内嵌音效（异步，第一次播放前的几百毫秒内会先用振荡器兜底）
   function load() {
     if (loading) return;
     loading = true;
@@ -144,56 +145,83 @@ const SFX = (() => {
         try {
           const p = a.decodeAudioData(b64arr(s));
           if (p && p.then) p.then(d => { buf[k][i] = d; }).catch(() => {});
-        } catch (e) { /* 老浏览器：留空，走兜底 */ }
+        } catch (e) { /* 老浏览器：留空，这个音效就不响 */ }
       });
+    }
+    if (typeof BGM_DATA !== 'undefined' && BGM_DATA) {
+      try {
+        const p = a.decodeAudioData(b64arr(BGM_DATA));
+        if (p && p.then) p.then(d => { bgmBuf = d; bgmStart(); }).catch(() => {});
+      } catch (e) { /* 没有背景音乐也能玩 */ }
     }
   }
 
-  // 返回 true = 已经用真音效播过（或静音），false = 让调用方用振荡器兜底
+  // 只播已经解码好的真音效；没解码好就静音等待，不再用振荡器兜底
   function hit(k, vol) {
     const a = ensure();
-    if (!a) return false;
-    if (muted) return true;
+    if (!a || muted) return;
+    const now = a.currentTime;
+    if (last[k] !== undefined && now - last[k] < MIN_GAP) return;
     if (!buf[k] && typeof SFX_DATA !== 'undefined') load();
     const arr = buf[k];
-    if (!arr) return false;
+    if (!arr) return;
     const ok = arr.filter(Boolean);
-    if (!ok.length) return false;
+    if (!ok.length) return;
+    last[k] = now;
     const src = a.createBufferSource();
     src.buffer = ok[(Math.random() * ok.length) | 0];
     const g = a.createGain();
-    g.gain.value = vol === undefined ? 0.55 : vol;
+    g.gain.value = vol === undefined ? 0.5 : vol;
     src.connect(g).connect(a.destination);
     src.start();
-    return true;
   }
 
-  function beep(f, dur, type, vol) {
-    const a = ensure(); if (!a || muted) return;
-    const o = a.createOscillator(), g = a.createGain();
-    o.type = type || 'square';
-    o.frequency.setValueAtTime(f, a.currentTime);
-    g.gain.setValueAtTime(0.0001, a.currentTime);
-    g.gain.exponentialRampToValueAtTime(vol || 0.05, a.currentTime + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
-    o.connect(g).connect(a.destination);
-    o.start(); o.stop(a.currentTime + dur + 0.02);
+  function bgmStart() {
+    const a = ensure();
+    if (!a || !bgmBuf || bgmNode || !bgmOn) return;
+    const src = a.createBufferSource();
+    src.buffer = bgmBuf;
+    src.loop = true;
+    const g = a.createGain();
+    g.gain.value = 0.15;
+    src.connect(g).connect(a.destination);
+    src.start();
+    bgmNode = { src, g };
+  }
+
+  function bgmStop() {
+    if (!bgmNode) return;
+    try { bgmNode.src.stop(); } catch (e) { /* 已经停了 */ }
+    bgmNode = null;
   }
 
   return {
     load,
-    coin() { if (!hit('coin', 0.42)) { beep(880, 0.07, 'square', 0.035); setTimeout(() => beep(1320, 0.09, 'square', 0.03), 55); } },
-    jump() { if (!hit('jump', 0.34)) beep(300, 0.08, 'square', 0.03); },
-    land() { if (!hit('land', 0.48)) beep(150, 0.05, 'triangle', 0.03); },
-    task() { if (!hit('task', 0.62)) { beep(660, 0.09, 'square', 0.04); setTimeout(() => beep(990, 0.12, 'square', 0.04), 90); setTimeout(() => beep(1320, 0.16, 'square', 0.035), 200); } },
-    door() { if (!hit('door', 0.38)) { beep(440, 0.1, 'sine', 0.04); setTimeout(() => beep(220, 0.14, 'sine', 0.035), 90); } },
-    fall() { if (!hit('fall', 0.42)) { beep(220, 0.2, 'sawtooth', 0.03); setTimeout(() => beep(120, 0.25, 'sawtooth', 0.03), 150); } },
-    buy() { if (!hit('buy', 0.42)) { beep(760, 0.06, 'square', 0.035); setTimeout(() => beep(1140, 0.1, 'square', 0.03), 60); } },
-    portal() { if (!hit('portal', 0.42)) { beep(520, 0.12, 'sine', 0.04); setTimeout(() => beep(780, 0.18, 'sine', 0.04), 110); } },
-    chip() { if (!hit('chip', 0.34)) beep(1180, 0.06, 'square', 0.03); },
-    select() { if (!hit('select', 0.30)) beep(640, 0.04, 'square', 0.025); },
+    coin() { hit('coin', 0.40); },
+    jump() { hit('jump', 0.30); },
+    land() { hit('land', 0.42); },
+    task() { hit('task', 0.52); },
+    door() { hit('door', 0.34); },
+    fall() { hit('fall', 0.40); },
+    buy() { hit('buy', 0.38); },
+    portal() { hit('portal', 0.38); },
+    chip() { hit('chip', 0.28); },
+    select() { hit('select', 0.24); },
     mute(v) { muted = v; },
     isMuted() { return muted; },
-    resume() { const a = ensure(); if (a && a.state === 'suspended') a.resume(); load(); }
+    bgmToggle() {
+      bgmOn = !bgmOn;
+      if (bgmOn) { const a = ensure(); if (a && a.state === 'suspended') a.resume(); bgmStart(); }
+      else bgmStop();
+      return bgmOn;
+    },
+    isBgmOn() { return bgmOn; },
+    bgmStart,
+    resume() {
+      const a = ensure();
+      if (a && a.state === 'suspended') a.resume();
+      load();
+      bgmStart();
+    }
   };
 })();

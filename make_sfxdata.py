@@ -72,6 +72,15 @@ def main():
 
     body = "/* 音效数据（base64 MP3，forge_sfx 生成后转码内嵌）—— 由 make_sfxdata.py 生成 */\n"
     body += "const SFX_DATA = {\n" + ",\n".join(lines) + "\n};\n"
+
+    # 背景音乐（forge_music 生成的无缝循环）
+    bgm = os.path.join(os.path.dirname(SRC), "music", "bgm_city.mp3")
+    if os.path.isfile(bgm):
+        with open(bgm, "rb") as f:
+            body += "\n/* 背景音乐：forge_music 生成的 8 小节无缝循环 */\n"
+            body += 'const BGM_DATA = "%s";\n' % base64.b64encode(f.read()).decode("ascii")
+        print("bgm %s %.1f KB" % (os.path.basename(bgm), os.path.getsize(bgm) / 1024.0))
+
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:
         f.write(body)
 

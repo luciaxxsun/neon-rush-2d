@@ -563,6 +563,36 @@
       },
       "created": "2026-11-16T09:47:05",
       "license": "CC0-1.0 (procedurally generated)"
+    },
+    {
+      "name": "bgm_city",
+      "kind": "music",
+      "files": [
+        "assets\\music\\bgm_city.wav",
+        "assets\\music\\bgm_city.mid"
+      ],
+      "recipe": {
+        "tool": "forge_music",
+        "mood": "chill",
+        "style": "synthwave",
+        "seed": 41,
+        "bpm": 116,
+        "bars": 8,
+        "key": "A",
+        "mode": "minor",
+        "progression": [
+          3,
+          4,
+          2,
+          5,
+          3,
+          4,
+          2,
+          5
+        ]
+      },
+      "created": "2026-11-16T11:49:48",
+      "license": "CC0-1.0 (procedurally generated)"
     }
   ]
 }
