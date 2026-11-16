@@ -74,7 +74,7 @@ def main():
     body += "const SFX_DATA = {\n" + ",\n".join(lines) + "\n};\n"
 
     # 背景音乐（forge_music 生成的无缝循环）
-    bgm = os.path.join(os.path.dirname(SRC), "music", "bgm_city.mp3")
+    bgm = os.path.join(os.path.dirname(SRC), "music", "bgm_ambient.mp3")
     if os.path.isfile(bgm):
         with open(bgm, "rb") as f:
             body += "\n/* 背景音乐：forge_music 生成的 8 小节无缝循环 */\n"

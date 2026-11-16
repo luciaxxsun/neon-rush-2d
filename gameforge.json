@@ -593,6 +593,36 @@
       },
       "created": "2026-11-16T11:49:48",
       "license": "CC0-1.0 (procedurally generated)"
+    },
+    {
+      "name": "bgm_ambient",
+      "kind": "music",
+      "files": [
+        "assets\\music\\bgm_ambient.wav",
+        "assets\\music\\bgm_ambient.mid"
+      ],
+      "recipe": {
+        "tool": "forge_music",
+        "mood": "chill",
+        "style": "ambient",
+        "seed": 77,
+        "bpm": 72,
+        "bars": 8,
+        "key": "D",
+        "mode": "dorian",
+        "progression": [
+          3,
+          4,
+          2,
+          5,
+          3,
+          4,
+          2,
+          5
+        ]
+      },
+      "created": "2026-11-16T16:26:28",
+      "license": "CC0-1.0 (procedurally generated)"
     }
   ]
 }

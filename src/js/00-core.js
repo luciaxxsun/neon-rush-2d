@@ -186,7 +186,7 @@ const SFX = (() => {
     src.buffer = bgmBuf;
     src.loop = true;
     const g = a.createGain();
-    g.gain.value = 0.15;
+    g.gain.value = 0.11;
     src.connect(g).connect(a.destination);
     src.start();
     bgmNode = { src, g };
