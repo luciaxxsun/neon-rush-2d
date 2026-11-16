@@ -120,6 +120,7 @@ const SFX = (() => {
   let ac = null, muted = false, bgmOn = true, loading = false, bgmNode = null, bgmBuf = null;
   const buf = {};
   const last = {};          // 每种音效最近一次触发的时刻
+  const calls = {}, played = {};   // 诊断用：调用次数 / 真正播出的次数
   const MIN_GAP = 0.09;     // 同一种音效 90ms 内不重复，防止连点叠成一串电流声
 
   function ensure() {
@@ -158,6 +159,7 @@ const SFX = (() => {
 
   // 只播已经解码好的真音效；没解码好就静音等待，不再用振荡器兜底
   function hit(k, vol) {
+    calls[k] = (calls[k] || 0) + 1;
     const a = ensure();
     if (!a || muted) return;
     const now = a.currentTime;
@@ -168,6 +170,7 @@ const SFX = (() => {
     const ok = arr.filter(Boolean);
     if (!ok.length) return;
     last[k] = now;
+    played[k] = (played[k] || 0) + 1;
     const src = a.createBufferSource();
     src.buffer = ok[(Math.random() * ok.length) | 0];
     const g = a.createGain();
@@ -209,6 +212,7 @@ const SFX = (() => {
     select() { hit('select', 0.24); },
     mute(v) { muted = v; },
     isMuted() { return muted; },
+    stats() { return { calls: Object.assign({}, calls), played: Object.assign({}, played) }; },
     bgmToggle() {
       bgmOn = !bgmOn;
       if (bgmOn) { const a = ensure(); if (a && a.state === 'suspended') a.resume(); bgmStart(); }

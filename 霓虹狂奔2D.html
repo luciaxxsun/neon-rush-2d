@@ -358,6 +358,7 @@ const SFX = (() => {
   let ac = null, muted = false, bgmOn = true, loading = false, bgmNode = null, bgmBuf = null;
   const buf = {};
   const last = {};          // 每种音效最近一次触发的时刻
+  const calls = {}, played = {};   // 诊断用：调用次数 / 真正播出的次数
   const MIN_GAP = 0.09;     // 同一种音效 90ms 内不重复，防止连点叠成一串电流声
 
   function ensure() {
@@ -396,6 +397,7 @@ const SFX = (() => {
 
   // 只播已经解码好的真音效；没解码好就静音等待，不再用振荡器兜底
   function hit(k, vol) {
+    calls[k] = (calls[k] || 0) + 1;
     const a = ensure();
     if (!a || muted) return;
     const now = a.currentTime;
@@ -406,6 +408,7 @@ const SFX = (() => {
     const ok = arr.filter(Boolean);
     if (!ok.length) return;
     last[k] = now;
+    played[k] = (played[k] || 0) + 1;
     const src = a.createBufferSource();
     src.buffer = ok[(Math.random() * ok.length) | 0];
     const g = a.createGain();
@@ -447,6 +450,7 @@ const SFX = (() => {
     select() { hit('select', 0.24); },
     mute(v) { muted = v; },
     isMuted() { return muted; },
+    stats() { return { calls: Object.assign({}, calls), played: Object.assign({}, played) }; },
     bgmToggle() {
       bgmOn = !bgmOn;
       if (bgmOn) { const a = ensure(); if (a && a.state === 'suspended') a.resume(); bgmStart(); }
@@ -3259,6 +3263,7 @@ function moveX(dx) {
 
 function moveY(dy) {
   const prevFeet = P.y + P.h;
+  const wasGround = P.onGround;   // 进碰撞前记下上一帧是否站在地上
   P.y += dy;
   P.onGround = false;
   for (const s of SC.platforms) {
@@ -3276,10 +3281,13 @@ function moveY(dy) {
     }
     if (overlap(P.x, P.y, P.w, P.h, s)) {
       if (dy > 0) {
+        const impact = P.vy;          // 落地瞬间的下坠速度
         P.y = s.y - P.h;
         P.vy = 0;
-        if (!P.onGround) SFX.land();
-        if (P.vy > 130) fxLand(P.x + P.w / 2, P.y + P.h);
+        if (!wasGround) {             // 只在"从空中落地"这一刻响，站在地上不会每帧都响
+          if (impact > 40) SFX.land();
+          if (impact > 130) fxLand(P.x + P.w / 2, P.y + P.h);
+        }
         P.onGround = true;
         P.jumps = 0;
       } else if (dy < 0) {
@@ -4622,6 +4630,23 @@ const BGM_DATA = "SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYyLjEyLjEwMQAAAAAAAAAAAAAA//
     playMode();
     const s = params.get('shot');
     const W = (x, y) => { NR.tp(x, y); };
+    if (s === 'sfxwalk') {
+      // 模拟走 10 秒（每 1.25 秒跳一次），统计每种音效被调用多少次
+      const S = {};
+      loadScene('spawn');
+      NR.tp(560, 220);
+      const K = (t, c) => window.dispatchEvent(new KeyboardEvent(t, { code: c }));
+      K('keydown', 'KeyD');
+      for (let i = 0; i < 40; i++) {
+        if (i % 5 === 0) { K('keydown', 'Space'); NR.step(2); K('keyup', 'Space'); }
+        NR.step(15);
+      }
+      K('keyup', 'KeyD');
+      S.walkX = Math.round(P.x);
+      S.sfxStats = (typeof SFX.stats === 'function') ? SFX.stats() : 'no-stats';
+      document.title = 'PROBE ' + JSON.stringify(S);
+      return;
+    }
     if (s === 'spawn') {
       loadScene('spawn'); W(560, 220);
     } else if (s === 'spawn2') {

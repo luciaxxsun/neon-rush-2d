@@ -410,6 +410,23 @@
     playMode();
     const s = params.get('shot');
     const W = (x, y) => { NR.tp(x, y); };
+    if (s === 'sfxwalk') {
+      // 模拟走 10 秒（每 1.25 秒跳一次），统计每种音效被调用多少次
+      const S = {};
+      loadScene('spawn');
+      NR.tp(560, 220);
+      const K = (t, c) => window.dispatchEvent(new KeyboardEvent(t, { code: c }));
+      K('keydown', 'KeyD');
+      for (let i = 0; i < 40; i++) {
+        if (i % 5 === 0) { K('keydown', 'Space'); NR.step(2); K('keyup', 'Space'); }
+        NR.step(15);
+      }
+      K('keyup', 'KeyD');
+      S.walkX = Math.round(P.x);
+      S.sfxStats = (typeof SFX.stats === 'function') ? SFX.stats() : 'no-stats';
+      document.title = 'PROBE ' + JSON.stringify(S);
+      return;
+    }
     if (s === 'spawn') {
       loadScene('spawn'); W(560, 220);
     } else if (s === 'spawn2') {

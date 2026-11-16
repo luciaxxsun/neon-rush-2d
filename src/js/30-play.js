@@ -50,6 +50,7 @@ function moveX(dx) {
 
 function moveY(dy) {
   const prevFeet = P.y + P.h;
+  const wasGround = P.onGround;   // 进碰撞前记下上一帧是否站在地上
   P.y += dy;
   P.onGround = false;
   for (const s of SC.platforms) {
@@ -67,10 +68,13 @@ function moveY(dy) {
     }
     if (overlap(P.x, P.y, P.w, P.h, s)) {
       if (dy > 0) {
+        const impact = P.vy;          // 落地瞬间的下坠速度
         P.y = s.y - P.h;
         P.vy = 0;
-        if (!P.onGround) SFX.land();
-        if (P.vy > 130) fxLand(P.x + P.w / 2, P.y + P.h);
+        if (!wasGround) {             // 只在"从空中落地"这一刻响，站在地上不会每帧都响
+          if (impact > 40) SFX.land();
+          if (impact > 130) fxLand(P.x + P.w / 2, P.y + P.h);
+        }
         P.onGround = true;
         P.jumps = 0;
       } else if (dy < 0) {
