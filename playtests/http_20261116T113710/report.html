@@ -1,0 +1,21 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<title>Playtest report</title><style>
+:root{--bg:#1a1c2c;--fg:#f4f4f4;--mute:#94b0c2;--card:#262b44}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:28px} .verdict{color:#f77622} .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.card{background:var(--card);border-radius:10px;padding:12px} .card b{display:block;font-size:22px} .card span{color:var(--mute);font-size:13px}
+ul{padding-left:18px} li{margin:10px 0} li img{max-width:100%;border-radius:8px;margin-top:6px}
+.tag{color:#1a1c2c;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:700;text-transform:uppercase}
+img.wide{width:100%;border-radius:10px}</style>
+<h1>Playtest: <span class=verdict>ROUGH</span></h1>
+<div class=grid>
+<div class=card><b>90.2s</b><span>played (explorer)</span></div>
+<div class=card><b>60.0</b><span>avg FPS (p5 60)</span></div>
+<div class=card><b>2 / 0</b><span>deaths / wins</span></div>
+<div class=card><b>43</b><span>map cells explored</span></div>
+<div class=card><b>0.0153</b><span>mean screen novelty</span></div>
+<div class=card><b>0</b><span>console errors</span></div></div>
+<h2>Issues</h2><ul><li><span class=tag style='background:#f77622'>major</span> <b>Player got stuck</b> — no movement for 4.1s while holding ['ArrowUp'] at (955, 280) <i>t=35.8s</i><br><img src="shots\03_stuck.jpg" alt=""></li><li><span class=tag style='background:#41a6f6'>design</span> <b>Nothing happens</b> — 27s–90s: 63s of play with no game event (no pickup, fight, damage or progress) <i>t=27.3s</i></li><li><span class=tag style='background:#41a6f6'>design</span> <b>Low-novelty stretch (likely boring)</b> — 34s–46s: the screen barely changed and nothing happened <i>t=34.47s</i></li></ul>
+
+<h2>Timeline</h2><img class=wide src="timeline.png" alt="novelty and fps over time">
+<h2>Key moments</h2><img class=wide src="moments.jpg" alt="screenshots of key moments">

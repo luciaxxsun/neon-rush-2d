@@ -7,6 +7,7 @@ const ui = {};
 
 function uiInit() {
   const $ = id => document.getElementById(id);
+  if (typeof SFX !== 'undefined' && SFX.load) SFX.load();
   ui.coins = $('coins');
   ui.chips = $('chips');
   ui.area = $('area');
@@ -89,6 +90,7 @@ function openShop(id) {
   if (!ui.shopName) uiInit();
   const shop = SHOPS.find(s => s.id === id);
   if (!shop) return;
+  SFX.select();
   G.shopOpen = id;
   G.owned = G.owned || {};
   ui.shopName.textContent = shop.name;
@@ -135,9 +137,11 @@ function buyItem(shop, itemId) {
   if (G.coins < it.price) { toast('金币不够，差 ' + (it.price - G.coins) + ' 枚'); return; }
   G.coins -= it.price;
   G.owned[it.id] = own + 1;
+  if (window.gfEvent) gfEvent('buy', { item: itemId, price: it.price });
   if (it.dur && it.eff) addBuff(it);
   else applyItem(it.id);
   SFX.buy();
+  fxBuy(P.x + P.w / 2, P.y + P.h - 26);
   ui.shopCoins.textContent = G.coins;
   updateHUD();
   renderShopItems(shop);
@@ -218,6 +222,7 @@ function liftCarSpot(spot) {
 
 function openLift(spot) {
   if (!ui.liftBtns) uiInit();
+  SFX.select();
   G.liftOpen = spot;
   const floors = (SC && SC.floors) ? SC.floors : [{ y: 250, name: '1F' }];
   const here = spot.y;
@@ -269,7 +274,7 @@ function startGame() {
   ui.title.classList.remove('on');
   SFX.resume();
   loadScene('spawn');
-  toast('往左走是店，往右走也是店，中间是传送门');
+  toast('按 A / D 跑起来 · 空格跳 · 走到光门按 E 去中枢');
 }
 
 function togglePause() {

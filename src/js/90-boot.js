@@ -135,6 +135,7 @@ function render(dt, t) {
   drawPlayer(P, t);
 
   // 粒子
+  FX.draw(ctx);
   if (P.dust) {
     for (const d of P.dust) rl(d.x, d.y, 2, 2, '#ffffff', clamp(d.l * 2, 0, 0.6));
   }
@@ -176,6 +177,7 @@ function loop(ts) {
     updatePlay(dt);
   }
   if (G.fade > 0) G.fade = Math.max(0, G.fade - dt * 4);
+  FX.update(dt);
 
   render(dt, ts / 1000);
 

@@ -234,6 +234,12 @@
     R.canPassCounter = Math.abs(P.x - cxs) < 6;
     exitShop();
 
+    // 音效
+    R.sfxGroups = (typeof SFX_DATA !== 'undefined') ? Object.keys(SFX_DATA).length : 0;
+    R.sfxList = (typeof SFX_DATA !== 'undefined') ? Object.keys(SFX_DATA).map(k => k + 'x' + SFX_DATA[k].length).join(',') : 'none';
+    R.sfxKb = (typeof SFX_DATA !== 'undefined') ? Math.round(Object.keys(SFX_DATA).reduce((s, k) => s + SFX_DATA[k].join('').length, 0) / 1024) : 0;
+    R.sfxApi = ['coin', 'jump', 'land', 'task', 'door', 'fall', 'buy', 'portal', 'chip', 'select'].filter(k => typeof SFX[k] === 'function').length;
+
     // 全屏
     R.fsBtn = !!document.getElementById('fsBtn');
     R.fsBox = (() => {

@@ -25,6 +25,7 @@ function jump(power) {
   P.coyote = 0;
   P.buffer = 0;
   SFX.jump();
+  fxJump(P.x + P.w / 2, P.y + P.h);
   for (let i = 0; i < 5; i++) {
     P.dust = P.dust || [];
     P.dust.push({ x: P.x + P.w / 2, y: P.y + P.h, vx: rnd(-40, 40), vy: rnd(-30, -5), l: 0.3 });
@@ -57,6 +58,7 @@ function moveY(dy) {
       // 单向平台：只能从上面落下来，可以从下面穿上去
       if (dy <= 0 || prevFeet > s.y + 2) continue;
       if (P.vy > 90) SFX.land();
+      if (P.vy > 130) fxLand(P.x + P.w / 2, P.y + P.h);
       P.y = s.y - P.h;
       P.vy = 0;
       P.onGround = true;
@@ -68,6 +70,7 @@ function moveY(dy) {
         P.y = s.y - P.h;
         P.vy = 0;
         if (!P.onGround) SFX.land();
+        if (P.vy > 130) fxLand(P.x + P.w / 2, P.y + P.h);
         P.onGround = true;
         P.jumps = 0;
       } else if (dy < 0) {
@@ -166,6 +169,7 @@ function updatePlayer(dt) {
 function onFall() {
   G.falls++;
   SFX.fall();
+  if (window.gfEvent) gfEvent('death', { scene: G.scene });
   if (G.scene === 'inside') {
     P.x = SC.spawn.x; P.y = SC.spawn.y; P.vx = 0; P.vy = 0;
     return;
@@ -258,13 +262,15 @@ function updateBeacons() {
       G.chips += 5 + bonus;
       G.coins += 20;
       SFX.task();
+      fxWin(b.x, b.y);
       toast('任务完成 · 芯片 +' + (5 + bonus) + ' · 金币 +20');
       if (SC.beacons.every(v => v.done) && !SC.cleared) {
         SC.cleared = true;
         G.chalClear = G.chalClear || {};
         G.chalClear['w' + SC.world + 'c' + SC.chal] = true;
         G.chips += 15;
-        setTimeout(() => { toast('挑战通关 · 芯片 +15'); updateHUD(); }, 700);
+        if (window.gfEvent) gfEvent('win', { what: 'challenge', world: SC.world, chal: SC.chal });
+        setTimeout(() => { toast('挑战通关 · 芯片 +15'); SFX.chip(); updateHUD(); }, 700);
       }
       updateHUD();
     }
@@ -281,6 +287,8 @@ function updateCoins() {
       c.got = true;
       G.coins += gain;
       SFX.coin();
+      fxCoin(c.x, c.y);
+      if (window.gfEvent) gfEvent('coin');
       updateHUD();
     }
   }

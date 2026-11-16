@@ -16,6 +16,14 @@ function shade(hex, k) {
 }
 
 /* ---------------- 场景数据 ---------------- */
+/* 店内地面撒几枚金币：进店也有东西可捡，别让店里空着 */
+function insideCoins(W, FY) {
+  const out = [];
+  for (let x = 250; x < W - 290; x += 120) out.push({ x, y: FY - 20, got: false, ph: out.length + 1 });
+  if (!out.length) out.push({ x: Math.round(W * 0.55), y: FY - 20, got: false, ph: 1 });
+  return out;
+}
+
 function buildInside(shopId) {
   const list = (typeof SHOPS !== 'undefined') ? SHOPS : [];
   const shop = list.find(s => s.id === shopId) || list[0];
@@ -45,7 +53,7 @@ function buildInside(shopId) {
     id: 'inside', kind: 'inside', bg: 'inside', pal: PAL.spawn,
     title: shop.name + ' · 店内', shopId,
     shopName: shop.name, keeper: shop.keeper,
-    platforms: plats, spots, buildings: [], decos: [], coins: [], beacons: [],
+    platforms: plats, spots, buildings: [], decos: [], coins: insideCoins(W, FY), beacons: [],
     stands, counter: { x: cx, y: FY, w: 150, h: 34 },
     door: { x: 88, y: FY },
     roomW: W, floors: [],
@@ -58,6 +66,7 @@ function buildInside(shopId) {
 /* ---------------- 进出店 ---------------- */
 function enterShop(id) {
   if (!SC || SC.kind === 'inside') return;
+  if (window.gfEvent) gfEvent('enter', { shop: id });
   G.insideBack = {
     scene: SC.kind, world: G.world, chal: G.chal,
     x: P.x, y: P.y

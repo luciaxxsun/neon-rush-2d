@@ -380,6 +380,7 @@ function loadScene(kind, a, b) {
   else SC = buildSpawn();
 
   G.scene = SC.id;
+  if (typeof FX !== 'undefined') FX.clear();
   P.x = SC.spawn.x; P.y = SC.spawn.y;
   P.vx = 0; P.vy = 0; P.onGround = false; P.jumps = 0; P.dashT = 0;
   P.face = 1;
@@ -394,7 +395,9 @@ function loadScene(kind, a, b) {
 }
 
 function gotoScene(kind, a, b) {
-  SFX.door();
+  if (kind === 'challenge' || kind === 'hub5' || kind === 'world') SFX.portal();
+  else SFX.door();
+  if (window.gfEvent) gfEvent('scene', { kind: kind });
   loadScene(kind, a, b);
 }
 

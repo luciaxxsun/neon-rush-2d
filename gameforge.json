@@ -1,0 +1,568 @@
+{
+  "name": "\u9713\u8679\u8dd1\u91772D",
+  "created": "2026-11-16T09:46:29",
+  "assets": [
+    {
+      "name": "coin",
+      "kind": "sfx",
+      "files": [
+        "assets\\sfx\\coin_1.wav",
+        "assets\\sfx\\coin_2.wav",
+        "assets\\sfx\\coin_3.wav"
+      ],
+      "recipe": {
+        "tool": "forge_sfx",
+        "engine": "synth",
+        "variants": [
+          {
+            "preset": "coin",
+            "seed": 7,
+            "style": "retro",
+            "variation": 0,
+            "sfxr": {
+              "wave_type": 0,
+              "env_attack": 0.0,
+              "env_sustain": 0.015084917392450194,
+              "env_punch": 0.32173088600026284,
+              "env_decay": 0.36037378921594154,
+              "base_freq": 0.5619163824165812,
+              "freq_limit": 0.0,
+              "freq_ramp": 0.0,
+              "freq_dramp": 0.0,
+              "vib_strength": 0.0,
+              "vib_speed": 0.0,
+              "arp_mod": 0.0,
+              "arp_speed": 0.0,
+              "duty": 0.0,
+              "duty_ramp": 0.0,
+              "repeat_speed": 0.0,
+              "pha_offset": 0.0,
+              "pha_ramp": 0.0,
+              "lpf_freq": 1.0,
+              "lpf_ramp": 0.0,
+              "lpf_resonance": 0.0,
+              "hpf_freq": 0.0,
+              "hpf_ramp": 0.0,
+              "sound_vol": 0.5
+            },
+            "file": "coin_1.wav",
+            "seconds": 0.295
+          },
+          {
+            "preset": "coin",
+            "seed": 7,
+            "style": "retro",
+            "variation": 1,
+            "sfxr": {
+              "wave_type": 0,
+              "env_attack": 0.0,
+              "env_sustain": 0.019905487700971246,
+              "env_punch": 0.35554628817908274,
+              "env_decay": 0.34460485330596063,
+              "base_freq": 0.5619163824165812,
+              "freq_limit": 0.0,
+              "freq_ramp": 0.0,
+              "freq_dramp": 0.0,
+              "vib_strength": 0.03768405077811671,
+              "vib_speed": 0.0214198783613041,
+              "arp_mod": 0.0,
+              "arp_speed": 0.04883844035990913,
+              "duty": 0.0,
+              "duty_ramp": 5.965847618882858e-05,
+              "repeat_speed": 0.0,
+              "pha_offset": 0.0,
+              "pha_ramp": 0.0,
+              "lpf_freq": 1.0,
+              "lpf_ramp": 0.033534504633413995,
+              "lpf_resonance": 0.03825653079251985,
+              "hpf_freq": 0.00779350727608967,
+              "hpf_ramp": 0.029592125291165186,
+              "sound_vol": 0.5
+            },
+            "file": "coin_2.wav",
+            "seconds": 0.27
+          },
+          {
+            "preset": "coin",
+            "seed": 7,
+            "style": "retro",
+            "variation": 2,
+            "sfxr": {
+              "wave_type": 0,
+              "env_attack": 0.0,
+              "env_sustain": 0.015084917392450194,
+              "env_punch": 0.32173088600026284,
+              "env_decay": 0.3711066114911342,
+              "base_freq": 0.5619163824165812,
+              "freq_limit": 0.0,
+              "freq_ramp": -0.047328265804094063,
+              "freq_dramp": -0.03522786600410088,
+              "vib_strength": 0.0,
+              "vib_speed": 0.0,
+              "arp_mod": 0.0,
+              "arp_speed": 0.030824954498548288,
+              "duty": 0.009816667933276527,
+              "duty_ramp": 0.04956299700507147,
+              "repeat_speed": 0.0,
+              "pha_offset": 0.0,
+              "pha_ramp": -0.03502109241474077,
+              "lpf_freq": 1.0,
+              "lpf_ramp": 0.036864579511590764,
+              "lpf_resonance": 0.0,
+              "hpf_freq": 0.0,
+              "hpf_ramp": 0.0,
+              "sound_vol": 0.5
+            },
+            "file": "coin_3.wav",
+            "seconds": 0.313
+          }
+        ]
+      },
+      "created": "2026-11-16T09:46:29",
+      "license": "CC0-1.0 (procedurally generated)"
+    },
+    {
+      "name": "jump",
+      "kind": "sfx",
+      "files": [
+        "assets\\sfx\\jump_1.wav",
+        "assets\\sfx\\jump_2.wav"
+      ],
+      "recipe": {
+        "tool": "forge_sfx",
+        "engine": "synth",
+        "variants": [
+          {
+            "preset": "jump",
+            "seed": 11,
+            "style": "retro",
+            "variation": 0,
+            "sfxr": {
+              "wave_type": 0,
+              "env_attack": 0.0,
+              "env_sustain": 0.239695021029932,
+              "env_punch": 0.0,
+              "env_decay": 0.20156825461245423,
+              "base_freq": 0.4679317158241488,
+              "freq_limit": 0.0,
+              "freq_ramp": 0.2848421168047459,
+              "freq_dramp": 0.0,
+              "vib_strength": 0.0,
+              "vib_speed": 0.0,
+              "arp_mod": 0.0,
+              "arp_speed": 0.0,
+              "duty": 0.27142773210589116,
+              "duty_ramp": 0.0,
+              "repeat_speed": 0.0,
+              "pha_offset": 0.0,
+              "pha_ramp": 0.0,
+              "lpf_freq": 0.6928548165749167,
+              "lpf_ramp": 0.0,
+              "lpf_resonance": 0.0,
+              "hpf_freq": 0.0,
+              "hpf_ramp": 0.0,
+              "sound_vol": 0.5
+            },
+            "file": "jump_1.wav",
+            "seconds": 0.222
+          },
+          {
+            "preset": "jump",
+            "seed": 11,
+            "style": "retro",
+            "variation": 1,
+            "sfxr": {
+              "wave_type": 0,
+              "env_attack": 0.0,
+              "env_sustain": 0.23705103410936995,
+              "env_punch": 0.0,
+              "env_decay": 0.23027990754754635,
+              "base_freq": 0.4191220664676964,
+              "freq_limit": 0.0,
+              "freq_ramp": 0.31182842110798736,
+              "freq_dramp": 0.013222030100371249,
+              "vib_strength": 0.011529514450160115,
+              "vib_speed": 0.039530701457927,
+              "arp_mod": 0.0,
+              "arp_speed": 0.0,
+              "duty": 0.27142773210589116,
+              "duty_ramp": 0.011355771904070465,
+              "repeat_speed": 0.026434727448026996,
+              "pha_offset": -0.04134324872164148,
+              "pha_ramp": 0.0,
+              "lpf_freq": 0.6928548165749167,
+              "lpf_ramp": 0.0,
+              "lpf_resonance": 0.03155797271325124,
+              "hpf_freq": 0.0,
+              "hpf_ramp": 0.0,
+              "sound_vol": 0.5
+            },
+            "file": "jump_2.wav",
+            "seconds": 0.248
+          }
+        ]
+      },
+      "created": "2026-11-16T09:46:43",
+      "license": "CC0-1.0 (procedurally generated)"
+    },
+    {
+      "name": "land",
+      "kind": "sfx",
+      "files": [
+        "assets\\sfx\\land_1.wav",
+        "assets\\sfx\\land_2.wav"
+      ],
+      "recipe": {
+        "tool": "forge_sfx",
+        "engine": "synth",
+        "variants": [
+          {
+            "preset": "thud",
+            "seed": 13,
+            "style": "retro",
+            "variation": 0,
+            "file": "land_1.wav",
+            "seconds": 0.45
+          },
+          {
+            "preset": "thud",
+            "seed": 13,
+            "style": "retro",
+            "variation": 1,
+            "file": "land_2.wav",
+            "seconds": 0.45
+          }
+        ]
+      },
+      "created": "2026-11-16T09:46:45",
+      "license": "CC0-1.0 (procedurally generated)"
+    },
+    {
+      "name": "task",
+      "kind": "sfx",
+      "files": [
+        "assets\\sfx\\task.wav"
+      ],
+      "recipe": {
+        "tool": "forge_sfx",
+        "engine": "synth",
+        "variants": [
+          {
+            "preset": "powerup",
+            "seed": 3,
+            "style": "modern",
+            "variation": 0,
+            "sfxr": {
+              "wave_type": 1,
+              "env_attack": 0.0,
+              "env_sustain": 0.026211543695925245,
+              "env_punch": 0.0,
+              "env_decay": 0.10526719662194967,
+              "base_freq": 0.36326876758878557,
+              "freq_limit": 0.0,
+              "freq_ramp": 0.3415680154384778,
+              "freq_dramp": 0.0,
+              "vib_strength": 0.0,
+              "vib_speed": 0.0,
+              "arp_mod": 0.0,
+              "arp_speed": 0.0,
+              "duty": 0.0,
+              "duty_ramp": 0.0,
+              "repeat_speed": 0.6502881216432217,
+              "pha_offset": 0.0,
+              "pha_ramp": 0.0,
+              "lpf_freq": 1.0,
+              "lpf_ramp": 0.0,
+              "lpf_resonance": 0.0,
+              "hpf_freq": 0.0,
+              "hpf_ramp": 0.0,
+              "sound_vol": 0.5
+            },
+            "file": "task.wav",
+            "seconds": 0.907
+          }
+        ]
+      },
+      "created": "2026-11-16T09:46:47",
+      "license": "CC0-1.0 (procedurally generated)"
+    },
+    {
+      "name": "door",
+      "kind": "sfx",
+      "files": [
+        "assets\\sfx\\door_1.wav",
+        "assets\\sfx\\door_2.wav"
+      ],
+      "recipe": {
+        "tool": "forge_sfx",
+        "engine": "synth",
+        "variants": [
+          {
+            "preset": "whoosh",
+            "seed": 5,
+            "style": "modern",
+            "variation": 0,
+            "file": "door_1.wav",
+            "seconds": 1.404
+          },
+          {
+            "preset": "whoosh",
+            "seed": 5,
+            "style": "modern",
+            "variation": 1,
+            "file": "door_2.wav",
+            "seconds": 1.354
+          }
+        ]
+      },
+      "created": "2026-11-16T09:46:50",
+      "license": "CC0-1.0 (procedurally generated)"
+    },
+    {
+      "name": "fall",
+      "kind": "sfx",
+      "files": [
+        "assets\\sfx\\fall.wav"
+      ],
+      "recipe": {
+        "tool": "forge_sfx",
+        "engine": "synth",
+        "variants": [
+          {
+            "preset": "hurt",
+            "seed": 21,
+            "style": "crunchy",
+            "variation": 0,
+            "sfxr": {
+              "wave_type": 0,
+              "env_attack": 0.0,
+              "env_sustain": 0.08432785884739037,
+              "env_punch": 0.0,
+              "env_decay": 0.29794424741362535,
+              "base_freq": 0.45081804827600686,
+              "freq_limit": 0.0,
+              "freq_ramp": -0.4125028028461351,
+              "freq_dramp": 0.0,
+              "vib_strength": 0.0,
+              "vib_speed": 0.0,
+              "arp_mod": 0.0,
+              "arp_speed": 0.0,
+              "duty": 0.25079619298771133,
+              "duty_ramp": 0.0,
+              "repeat_speed": 0.0,
+              "pha_offset": 0.0,
+              "pha_ramp": 0.0,
+              "lpf_freq": 1.0,
+              "lpf_ramp": 0.0,
+              "lpf_resonance": 0.0,
+              "hpf_freq": 0.28896451036436016,
+              "hpf_ramp": 0.0,
+              "sound_vol": 0.5
+            },
+            "file": "fall.wav",
+            "seconds": 0.217
+          }
+        ]
+      },
+      "created": "2026-11-16T09:46:52",
+      "license": "CC0-1.0 (procedurally generated)"
+    },
+    {
+      "name": "buy",
+      "kind": "sfx",
+      "files": [
+        "assets\\sfx\\buy_1.wav",
+        "assets\\sfx\\buy_2.wav"
+      ],
+      "recipe": {
+        "tool": "forge_sfx",
+        "engine": "synth",
+        "variants": [
+          {
+            "preset": "pickup",
+            "seed": 17,
+            "style": "retro",
+            "variation": 0,
+            "sfxr": {
+              "wave_type": 0,
+              "env_attack": 0.0,
+              "env_sustain": 0.08066907771186792,
+              "env_punch": 0.38688761332933963,
+              "env_decay": 0.4841979097295507,
+              "base_freq": 0.6609919548562466,
+              "freq_limit": 0.0,
+              "freq_ramp": 0.0,
+              "freq_dramp": 0.0,
+              "vib_strength": 0.0,
+              "vib_speed": 0.0,
+              "arp_mod": 0.0,
+              "arp_speed": 0.0,
+              "duty": 0.0,
+              "duty_ramp": 0.0,
+              "repeat_speed": 0.0,
+              "pha_offset": 0.0,
+              "pha_ramp": 0.0,
+              "lpf_freq": 1.0,
+              "lpf_ramp": 0.0,
+              "lpf_resonance": 0.0,
+              "hpf_freq": 0.0,
+              "hpf_ramp": 0.0,
+              "sound_vol": 0.5
+            },
+            "file": "buy_1.wav",
+            "seconds": 0.546
+          },
+          {
+            "preset": "pickup",
+            "seed": 17,
+            "style": "retro",
+            "variation": 1,
+            "sfxr": {
+              "wave_type": 0,
+              "env_attack": 0.0,
+              "env_sustain": 0.11879597361476221,
+              "env_punch": 0.38688761332933963,
+              "env_decay": 0.4841979097295507,
+              "base_freq": 0.6773475336643322,
+              "freq_limit": 0.0,
+              "freq_ramp": 0.0,
+              "freq_dramp": 0.04281041549172547,
+              "vib_strength": 0.0,
+              "vib_speed": 0.0,
+              "arp_mod": -0.029169165031285662,
+              "arp_speed": 0.0,
+              "duty": 0.018821658283907,
+              "duty_ramp": -0.010849589656210745,
+              "repeat_speed": 0.0,
+              "pha_offset": 0.0,
+              "pha_ramp": 0.0,
+              "lpf_freq": 0.960249486637508,
+              "lpf_ramp": 0.0,
+              "lpf_resonance": 0.0470576199226289,
+              "hpf_freq": 0.0,
+              "hpf_ramp": 0.0,
+              "sound_vol": 0.5
+            },
+            "file": "buy_2.wav",
+            "seconds": 0.564
+          }
+        ]
+      },
+      "created": "2026-11-16T09:46:55",
+      "license": "CC0-1.0 (procedurally generated)"
+    },
+    {
+      "name": "portal",
+      "kind": "sfx",
+      "files": [
+        "assets\\sfx\\portal_1.wav",
+        "assets\\sfx\\portal_2.wav"
+      ],
+      "recipe": {
+        "tool": "forge_sfx",
+        "engine": "synth",
+        "variants": [
+          {
+            "preset": "magic",
+            "seed": 29,
+            "style": "modern",
+            "variation": 0,
+            "file": "portal_1.wav",
+            "seconds": 3.14
+          },
+          {
+            "preset": "magic",
+            "seed": 29,
+            "style": "modern",
+            "variation": 1,
+            "file": "portal_2.wav",
+            "seconds": 3.14
+          }
+        ]
+      },
+      "created": "2026-11-16T09:46:59",
+      "license": "CC0-1.0 (procedurally generated)"
+    },
+    {
+      "name": "chip",
+      "kind": "sfx",
+      "files": [
+        "assets\\sfx\\chip.wav"
+      ],
+      "recipe": {
+        "tool": "forge_sfx",
+        "engine": "synth",
+        "variants": [
+          {
+            "preset": "blip",
+            "seed": 31,
+            "style": "modern",
+            "variation": 0,
+            "sfxr": {
+              "wave_type": 0,
+              "env_attack": 0.0,
+              "env_sustain": 0.17639768748941823,
+              "env_punch": 0.0,
+              "env_decay": 0.028171047097242274,
+              "base_freq": 0.3878312740099396,
+              "freq_limit": 0.0,
+              "freq_ramp": 0.0,
+              "freq_dramp": 0.0,
+              "vib_strength": 0.0,
+              "vib_speed": 0.0,
+              "arp_mod": 0.0,
+              "arp_speed": 0.0,
+              "duty": 0.025960927331556017,
+              "duty_ramp": 0.0,
+              "repeat_speed": 0.0,
+              "pha_offset": 0.0,
+              "pha_ramp": 0.0,
+              "lpf_freq": 1.0,
+              "lpf_ramp": 0.0,
+              "lpf_resonance": 0.0,
+              "hpf_freq": 0.1,
+              "hpf_ramp": 0.0,
+              "sound_vol": 0.5
+            },
+            "file": "chip.wav",
+            "seconds": 0.952
+          }
+        ]
+      },
+      "created": "2026-11-16T09:47:02",
+      "license": "CC0-1.0 (procedurally generated)"
+    },
+    {
+      "name": "select",
+      "kind": "sfx",
+      "files": [
+        "assets\\sfx\\select_1.wav",
+        "assets\\sfx\\select_2.wav"
+      ],
+      "recipe": {
+        "tool": "forge_sfx",
+        "engine": "synth",
+        "variants": [
+          {
+            "preset": "ui_click",
+            "seed": 37,
+            "style": "retro",
+            "variation": 0,
+            "file": "select_1.wav",
+            "seconds": 0.03
+          },
+          {
+            "preset": "ui_click",
+            "seed": 37,
+            "style": "retro",
+            "variation": 1,
+            "file": "select_2.wav",
+            "seconds": 0.03
+          }
+        ]
+      },
+      "created": "2026-11-16T09:47:05",
+      "license": "CC0-1.0 (procedurally generated)"
+    }
+  ]
+}
